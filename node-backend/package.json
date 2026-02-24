@@ -1,0 +1,29 @@
+{
+  "name": "node-backend",
+  "version": "1.0.0",
+  "description": "Node.js backend for m3u8 downloading inspired by N_m3u8DL-RE",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "m3u8-parser": "^7.2.0",
+    "fluent-ffmpeg": "^2.1.3",
+    "crypto-js": "^4.2.0",
+    "commander": "^12.0.0",
+    "cli-progress": "^3.12.0",
+    "chalk": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/fluent-ffmpeg": "^2.1.24",
+    "@types/crypto-js": "^4.2.2",
+    "@types/cli-progress": "^3.11.5",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.1"
+  }
+}

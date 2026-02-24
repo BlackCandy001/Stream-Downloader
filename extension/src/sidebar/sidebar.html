@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stream Downloader</title>
+  <link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <span class="logo">📺</span>
+      <h1>Stream Downloader</h1>
+    </div>
+    <button class="btn-icon" id="refreshBtn" title="Refresh">
+      <span>🔄</span>
+    </button>
+  </header>
+
+  <!-- Connection Status -->
+  <div class="status-bar" id="statusBar">
+    <div class="status-indicator">
+      <span class="status-dot" id="statusDot"></span>
+      <span class="status-text" id="statusText">Connecting...</span>
+    </div>
+    <span class="server-url">localhost:34567</span>
+  </div>
+
+  <!-- Search & Filter -->
+  <div class="toolbar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search streams...">
+    </div>
+    <select id="typeFilter" class="filter-select">
+      <option value="all">All Types</option>
+      <option value="HLS">HLS</option>
+      <option value="DASH">DASH</option>
+      <option value="M3U">M3U</option>
+    </select>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat">
+      <span class="stat-value" id="totalCount">0</span>
+      <span class="stat-label">Total</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" id="hlsCount">0</span>
+      <span class="stat-label">HLS</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" id="dashCount">0</span>
+      <span class="stat-label">DASH</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" id="m3uCount">0</span>
+      <span class="stat-label">M3U</span>
+    </div>
+  </div>
+
+  <!-- Stream List -->
+  <div class="stream-list-container">
+    <div id="streamList" class="stream-list">
+      <!-- Stream items will be inserted here -->
+    </div>
+    
+    <!-- Empty State -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <div class="empty-icon">📡</div>
+      <p class="empty-title">No streams detected</p>
+      <p class="empty-description">Browse websites with video content to detect streams</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="loading-state" style="display: none;">
+      <div class="spinner"></div>
+      <p>Loading streams...</p>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="settings-panel">
+    <div class="setting-item">
+      <span class="setting-label">Server URL</span>
+      <input type="text" id="serverUrlInput" class="setting-input" placeholder="localhost:34567" value="localhost:34567">
+    </div>
+    <div class="setting-item">
+      <span class="setting-label">Auto-send to app</span>
+      <label class="toggle">
+        <input type="checkbox" id="autoSendToggle">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-item">
+      <span class="setting-label">Notifications</span>
+      <label class="toggle">
+        <input type="checkbox" id="notificationsToggle" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-item">
+      <button class="btn btn-secondary btn-small" id="testConnectionBtn">
+        🔌 Test Connection
+      </button>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-bar">
+    <button class="btn btn-danger" id="clearAllBtn">
+      <span class="btn-icon-text">🗑️</span>
+      Clear All
+    </button>
+    <button class="btn btn-primary" id="sendAllBtn">
+      <span class="btn-icon-text">📤</span>
+      Send All
+    </button>
+  </div>
+
+  <script src="sidebar.js"></script>
+</body>
+</html>

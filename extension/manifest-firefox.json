@@ -1,0 +1,66 @@
+{
+  "manifest_version": 2,
+  "name": "Stream Downloader Companion",
+  "version": "1.0.0",
+  "description": "Thu thập và gửi URL m3u8/mpd đến Stream Downloader desktop app",
+  "author": "Stream Downloader Team",
+  "homepage_url": "https://github.com/nilaoda/N_m3u8DL-RE",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "storage",
+    "webRequest",
+    "webRequestBlocking",
+    "alarms",
+    "notifications",
+    "contextMenus",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["src/background/service-worker.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/content-script.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "browser_action": {
+    "default_title": "Stream Downloader",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "sidebar_action": {
+    "default_title": "Stream Downloader",
+    "default_panel": "src/sidebar/sidebar.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    },
+    "open_at_install": true
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "stream-downloader@nilaoda.com",
+      "strict_min_version": "109.0"
+    },
+    "gecko_android": {
+      "strict_min_version": "109.0"
+    }
+  },
+  "web_accessible_resources": [
+    "src/content/injected.js"
+  ]
+}
