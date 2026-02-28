@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Layout as AntLayout, Menu, Button, Tooltip } from "antd";
+import { Layout as AntLayout, Menu, Button, Tooltip, App } from "antd";
 import {
   HomeOutlined,
   DownloadOutlined,
@@ -123,6 +123,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const { message } = App.useApp();
   const [collapsed, setCollapsed] = useState(false);
   const [selectedKey, setSelectedKey] = useState("home");
 
@@ -130,6 +131,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const path = location.pathname.split("/")[1] || "home";
     setSelectedKey(path);
   }, [location]);
+
+  useEffect(() => {
+    const unsubscribe = window.electronAPI.onAppMessage((data) => {
+      if (data && data.type === "info" && data.content === "instantDownloadAutoStarted") {
+        message.success(t("messages.downloadStarted") || "Instant Download auto-started!");
+      }
+    });
+    return () => unsubscribe();
+  }, [message, t]);
 
   const menuItems = [
     {

@@ -32,6 +32,12 @@ browserAPI.runtime.onInstalled.addListener(() => {
     title: "Gửi URL này đến Stream Downloader",
     contexts: ["link", "video", "audio"],
   });
+
+  // Enable side panel on click for Chrome (Manifest V3)
+  if (browserAPI.sidePanel && browserAPI.sidePanel.setPanelBehavior) {
+    browserAPI.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
+      .catch((error) => console.error(error));
+  }
 });
 
 // Load settings (including server URL)
@@ -114,11 +120,24 @@ async function handleStreamDetected(data, sender) {
     source: data.source,
   });
 
-  // Check duplicate
-  const exists = detectedStreams.some((s) => s.url === data.url);
+  // Check duplicate (including YouTube video ID deduplication)
+  const exists = detectedStreams.some((s) => {
+    if (s.url === data.url) return true;
+    
+    // Deduplicate YouTube videos
+    if (s.type === "YOUTUBE" && data.type === "YOUTUBE") {
+      const getYouTubeId = (url) => {
+        const match = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&?]+)/i);
+        return match ? match[1] : url;
+      };
+      if (getYouTubeId(s.url) === getYouTubeId(data.url)) return true;
+    }
+    return false;
+  });
+  
   if (exists) {
     console.log(
-      "[Stream Downloader] Duplicate URL, skipping:",
+      "[Stream Downloader] Duplicate URL or Video, skipping:",
       data.url.substring(0, 50),
     );
     return;
@@ -162,7 +181,7 @@ async function handleStreamDetected(data, sender) {
   if (settings.settings?.notifications) {
     browserAPI.notifications.create({
       type: "basic",
-      iconUrl: "icons/icon48.png",
+      iconUrl: "icons/icon-48.png",
       title: "Phát hiện stream",
       message: `Đã tìm thấy ${data.type} stream: ${data.pageTitle?.substring(0, 50) || "Unknown"}`,
       contextMessage: data.url.substring(0, 100),
@@ -291,11 +310,15 @@ async function checkAppConnection() {
 // Update badge
 function updateBadge() {
   const count = detectedStreams.length;
+  // Handle both Manifest V2 (browserAction) and V3 (action)
+  const actionApi = browserAPI.action || browserAPI.browserAction;
+  if (!actionApi) return;
+
   if (count > 0) {
-    browserAPI.browserAction.setBadgeText({ text: count.toString() });
-    browserAPI.browserAction.setBadgeBackgroundColor({ color: "#ff0000" });
+    actionApi.setBadgeText({ text: count.toString() });
+    actionApi.setBadgeBackgroundColor({ color: "#ff0000" });
   } else {
-    browserAPI.browserAction.setBadgeText({ text: "" });
+    actionApi.setBadgeText({ text: "" });
   }
 }
 
@@ -329,5 +352,90 @@ browserAPI.alarms.onAlarm.addListener(async (alarm) => {
     updateBadge();
   }
 });
+
+// Network Interception via webRequest (Manifest V3 compatible for observation)
+// Bắt các stream dựa trên Content-Type header
+const MIME_TYPES_TO_DETECT = [
+  "application/vnd.apple.mpegurl",
+  "application/x-mpegurl",
+  "application/dash+xml",
+  "video/mp2t", // HLS segments
+];
+
+if (browserAPI.webRequest) {
+  // Common stream patterns for network sniffing
+  const IS_STREAM_REGEX = /\.(m3u8|mpd|m3u)(\?.*)?$/i;
+
+  try {
+    browserAPI.webRequest.onHeadersReceived.addListener(
+      (details) => {
+        if (details.tabId === -1) return;
+
+        // 1. Check Content-Type
+        const contentType = details.responseHeaders
+          ?.find((h) => h.name.toLowerCase() === "content-type")
+          ?.value?.toLowerCase();
+
+        let type = "";
+        if (contentType) {
+          if (
+            contentType.includes("mpegurl") ||
+            contentType.includes("x-mpegurl")
+          ) {
+            type = "HLS";
+          } else if (contentType.includes("dash+xml")) {
+            type = "DASH";
+          }
+        }
+
+        // 2. Check URL Pattern (fallback for generic Content-Type like octet-stream)
+        if (!type) {
+          if (details.url.includes(".m3u8") || details.url.includes("m3u8"))
+            type = "HLS";
+          else if (details.url.includes(".mpd") || details.url.includes("mpd"))
+            type = "DASH";
+          else if (details.url.includes(".m3u")) type = "M3U";
+        }
+
+        if (type) {
+          const source = contentType ? "network-headers" : "network-url";
+
+          // Manifest V3: Use promises for tabs.get
+          browserAPI.tabs.get(details.tabId)
+            .then((tab) => {
+              handleStreamDetected(
+                {
+                  url: details.url,
+                  type: type,
+                  source: source,
+                  pageTitle: tab?.title,
+                  pageUrl: tab?.url,
+                },
+                { tab }
+              );
+            })
+            .catch((err) => {
+              console.log(
+                "[Stream Downloader] Could not get tab info:",
+                err.message
+              );
+              handleStreamDetected(
+                {
+                  url: details.url,
+                  type: type,
+                  source: source,
+                },
+                { tab: { id: details.tabId } }
+              );
+            });
+        }
+      },
+      { urls: ["<all_urls>"] },
+      ["responseHeaders"] // removed "blocking" if it was there (it wasn't in the code, but the manifest had it)
+    );
+  } catch (e) {
+    console.error("Error setting up webRequest listener:", e);
+  }
+}
 
 console.log("[Stream Downloader] Background script started");

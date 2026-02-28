@@ -149,6 +149,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.removeListener("extension:stream-detected", subscription);
   },
 
+  onAppMessage: (callback: (data: any) => void) => {
+    const subscription = (_event: IpcRendererEvent, data: any) =>
+      callback(data);
+    ipcRenderer.on("app:message", subscription);
+    return () => ipcRenderer.removeListener("app:message", subscription);
+  },
+
   // Remove all listeners
   removeAllListeners: (channel: string) => {
     ipcRenderer.removeAllListeners(channel);
@@ -230,6 +237,7 @@ declare global {
       onDownloadFailed: (callback: (data: any) => void) => () => void;
       onExtensionStreamDetected: (callback: (data: any) => void) => () => void;
       onSettingsChanged: (callback: (data: Settings) => void) => () => void;
+      onAppMessage: (callback: (data: any) => void) => () => void;
       removeAllListeners: (channel: string) => void;
     };
   }

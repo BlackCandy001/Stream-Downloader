@@ -38,6 +38,7 @@ const sharedOptions = {
     "m3u8-parser",
     "node-fetch",
     "fluent-ffmpeg",
+    "@distube/ytdl-core",
   ],
   outdir: join(ROOT_DIR, "dist-electron"),
   sourcemap: "inline",

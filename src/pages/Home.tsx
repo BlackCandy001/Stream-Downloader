@@ -112,6 +112,10 @@ const Home: React.FC = () => {
   const [streams, setStreams] = useState<any[]>([]);
   const [selectedStreams, setSelectedStreams] = useState<string[]>([]);
   const [showConfig, setShowConfig] = useState(false);
+  const [detectedMetadata, setDetectedMetadata] = useState<{
+    type?: string;
+    title?: string;
+  } | null>(null);
   const { settings, loadSettings } = useSettingsStore();
   const { parseStream, startDownload } = useDownloader();
   const [form] = Form.useForm();
@@ -124,6 +128,7 @@ const Home: React.FC = () => {
     const unsubscribe = window.electronAPI.onExtensionStreamDetected((data) => {
       if (data && data.url) {
         setUrl(data.url);
+        setDetectedMetadata({ type: data.type, title: data.title });
         message.info(t("home.streamDetected"));
         // Optionally auto-parse
         // handleParse();
@@ -134,6 +139,23 @@ const Home: React.FC = () => {
       unsubscribe();
     };
   }, [message, t]);
+
+  useEffect(() => {
+    // Fix #6: Async loaded settings need to be manually pushed to the Antd form 
+    // since initialValues only applies on the first render (which might have empty cached state).
+    if (settings && settings.defaultSaveFolder) {
+      if (!form.getFieldValue("savePath")) {
+        form.setFieldsValue({
+          savePath: settings.defaultSaveFolder,
+        });
+      }
+      if (!form.getFieldValue("threadCount")) {
+        form.setFieldsValue({
+          threadCount: settings.defaultThreadCount || 8,
+        });
+      }
+    }
+  }, [settings.defaultSaveFolder, settings.defaultThreadCount, form]);
 
   const handleParse = async () => {
     if (!url.trim()) {
@@ -190,6 +212,8 @@ const Home: React.FC = () => {
         threadCount: values.threadCount,
         maxSpeed: values.maxSpeed,
         autoMerge: values.autoMerge,
+        type: detectedMetadata?.type,
+        title: detectedMetadata?.title || streams[0]?.title,
       };
 
       const result = await startDownload(options);
@@ -287,19 +311,23 @@ const Home: React.FC = () => {
                     {t("home.saveLocation")}
                   </span>
                 }
-                name="savePath"
-              >
-                <Space.Compact style={{ width: "100%" }}>
-                  <Input
-                    placeholder={t("home.saveLocation")}
-                    style={{ flex: 1 }}
-                  />
-                  <Button
+                >
+                  <Space.Compact style={{ width: "100%" }}>
+                    <Form.Item name="savePath" noStyle>
+                      <Input
+                        placeholder={t("home.saveLocation")}
+                        style={{ flex: 1 }}
+                      />
+                    </Form.Item>
+                    <Button
                     icon={<FolderOpenOutlined />}
-                    onClick={async () => {
+                    onClick={async (e) => {
+                      e.preventDefault();
                       const path = await window.electronAPI.filePickFolder();
                       if (path) {
-                        form.setFieldValue("savePath", path);
+                        form.setFieldsValue({
+                          savePath: path,
+                        });
                       }
                     }}
                     style={{ color: "var(--primary)" }}
@@ -324,7 +352,6 @@ const Home: React.FC = () => {
                     </span>
                   }
                   name="threadCount"
-                  initialValue={8}
                 >
                   <Slider
                     min={1}
@@ -342,14 +369,25 @@ const Home: React.FC = () => {
                   }
                   name="maxSpeed"
                 >
-                  <InputNumber
-                    style={{ width: "100%", borderRadius: "8px" }}
-                    placeholder={t("home.unlimited")}
-                    addonAfter={
-                      <span style={{ color: "var(--text-muted)" }}>MB/s</span>
-                    }
-                    min={0}
-                  />
+                  <Space.Compact style={{ width: "100%" }}>
+                    <InputNumber
+                      style={{ flex: 1, borderRadius: "8px 0 0 8px" }}
+                      placeholder={t("home.unlimited")}
+                      min={0}
+                    />
+                    <Button
+                      disabled
+                      style={{
+                        borderRadius: "0 8px 8px 0",
+                        background: "var(--surface)",
+                        border: "1px solid var(--glass-border)",
+                        borderLeft: "none",
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      MB/s
+                    </Button>
+                  </Space.Compact>
                 </Form.Item>
 
                 <Form.Item

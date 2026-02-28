@@ -16,6 +16,13 @@ import { SettingsService } from "./services/SettingsService.js";
 import { HistoryService } from "./services/HistoryService.js";
 import { LocalServer, StreamData } from "./services/LocalServer.js";
 
+import { File } from "buffer";
+
+// Polyfill for global.File which Electron main process hides
+if (typeof (global as any).File === "undefined") {
+  (global as any).File = File;
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let mainWindow: BrowserWindow | null = null;
@@ -88,7 +95,7 @@ function createTray() {
       {
         label: "Quit",
         click: () => {
-          app.isQuiting = true;
+          (app as any).isQuiting = true;
           app.quit();
         },
       },
@@ -105,7 +112,7 @@ function createTray() {
 function setupIpcHandlers() {
   // ============= APP CONTROL =============
   ipcMain.handle("app:quit", () => {
-    app.isQuiting = true;
+    (app as any).isQuiting = true;
     app.quit();
   });
 
@@ -237,7 +244,7 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle("history:export", async (_, format: string, path: string) => {
-    await historyService?.exportHistory(format, path);
+    await historyService?.exportHistory(format as "csv" | "json", path);
     return { success: true };
   });
 
@@ -257,6 +264,9 @@ function setupIpcHandlers() {
 
     // 3. Reset settings
     await settingsService?.resetSettings();
+
+    // 4. Clear detected streams
+    localServer?.clearStreams();
 
     return { success: true };
   });
@@ -382,12 +392,38 @@ app.on("before-quit", () => {
 });
 
 // Handle stream from extension
-function handleStreamFromExtension(stream: StreamData): void {
+async function handleStreamFromExtension(stream: StreamData): Promise<void> {
   console.log("[Main] Stream received from extension:", stream.url);
 
   // Notify renderer process
   if (mainWindow) {
     mainWindow.webContents.send("extension:stream-detected", stream);
+  }
+
+  // Instant Download Logic
+  const settings = await settingsService?.getSettings();
+  if (settings?.enableInstantDownload && downloaderService) {
+    console.log("[Main] Instant Download triggered for:", stream.url);
+    try {
+      await downloaderService.startDownload({
+        url: stream.url,
+        title: stream.title,
+        type: stream.type || "HLS",
+        selectedStreamIds: ["default"],
+        threadCount: settings.defaultThreadCount || 16,
+        savePath: settings.defaultSaveFolder,
+      });
+
+      // Notify renderer that an auto-download started
+      if (mainWindow) {
+        mainWindow.webContents.send("app:message", {
+          type: "info",
+          content: "instantDownloadAutoStarted",
+        });
+      }
+    } catch (err: any) {
+      console.error("[Main] Instant Download failed:", err.message);
+    }
   }
 
   // Show notification

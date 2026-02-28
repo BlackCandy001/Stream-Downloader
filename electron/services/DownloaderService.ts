@@ -2,6 +2,7 @@ import { spawn, ChildProcess } from "child_process";
 import { BrowserWindow, app } from "electron";
 import path from "path";
 import fs from "fs/promises";
+import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 import { shell } from "electron";
 import { SettingsService } from "./SettingsService.js";
@@ -72,6 +73,48 @@ export class DownloaderService {
   }
 
   async parseStream(url: string, options: any): Promise<any> {
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      try {
+        const ytdl = (await import("@distube/ytdl-core")).default;
+        const info = await ytdl.getInfo(url);
+        const streams = info.formats
+          .filter((f: any) => f.hasVideo && f.hasAudio)
+          .map((f: any) => ({
+            id: f.itag.toString(),
+            type: "video",
+            quality: f.qualityLabel || `${f.audioBitrate}kbps`,
+            bandwidth: f.bitrate,
+            codecs: f.codecs,
+            url: f.url,
+          }));
+
+        if (streams.length === 0) {
+          streams.push({
+            id: "highest",
+            type: "video",
+            quality: "Highest Quality",
+            bandwidth: 0,
+            codecs: "unknown",
+            url: url,
+          });
+        }
+
+        return {
+          success: true,
+          streams,
+          metadata: {
+            title: info.videoDetails.title,
+            sourceType: "YOUTUBE",
+          },
+        };
+      } catch (e: any) {
+        return {
+          success: false,
+          error: `Failed to parse YouTube: ${e.message}`,
+        };
+      }
+    }
+
     // Try native Node.js parser for HLS (now handles HTML extraction too)
     try {
       const result = await this.downloaderCore.parse(url, options.headers);
@@ -205,15 +248,126 @@ export class DownloaderService {
 
     const args = this.buildCommandLineArgs(options, settings);
 
+    // Native YouTube download support
+    if (
+      options.url.includes("youtube.com") ||
+      options.url.includes("youtu.be") ||
+      options.type === "YOUTUBE"
+    ) {
+      const saveDir =
+        options.savePath && options.savePath.trim() !== ""
+          ? options.savePath
+          : settings.defaultSaveFolder || app.getPath("downloads");
+
+      const safeOutputPath = this.getSafeOutputPath(saveDir, options.title);
+      task.outputPath = safeOutputPath;
+      task.status = "downloading";
+
+      (async () => {
+        try {
+          const ytdl = (await import("@distube/ytdl-core")).default;
+          const fs = await import("fs");
+          
+          let formatOptions: any = { 
+            quality: "highest", 
+            filter: "audioandvideo", // Ensure combined stream for audio
+            highWaterMark: 1 << 20, // Reduced buffer to 1MB to avoid early throttling
+            requestOptions: {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Accept": "*/*",
+                "Accept-Language": "en-US,en;q=0.9",
+              }
+            }
+          };
+          
+          // If a specific stream ID was provided and it's an itag, try to use it
+          if (options.selectedStreamIds && options.selectedStreamIds.length > 0) {
+            const itagStr = options.selectedStreamIds[0];
+            if (itagStr !== "highest" && !isNaN(Number(itagStr))) {
+              formatOptions.quality = Number(itagStr);
+            }
+          }
+
+          const stream = ytdl(options.url, formatOptions);
+          
+          let lastTime = Date.now();
+          let lastDownloadedBytes = 0;
+
+          stream.on(
+            "progress",
+            (chunkLength: number, downloadedBytes: number, totalBytes: number) => {
+              const now = Date.now();
+              const timeDiff = (now - lastTime) / 1000; // in seconds
+              
+              if (timeDiff >= 0.5) { // update speed every 0.5s
+                const bytesDiff = downloadedBytes - lastDownloadedBytes;
+                task.speed = bytesDiff > 0 ? bytesDiff / timeDiff : 0;
+                lastTime = now;
+                lastDownloadedBytes = downloadedBytes;
+              }
+
+              task.downloadedBytes = downloadedBytes;
+              task.totalBytes = totalBytes;
+              task.progress =
+                totalBytes > 0 ? (downloadedBytes / totalBytes) * 100 : 0;
+              task.downloadedSegments = downloadedBytes;
+              task.totalSegments = totalBytes;
+              this.broadcastProgress(task);
+            }
+          );
+
+          Object.defineProperty(task, 'process', {
+            value: {
+              kill: () => {
+                stream.destroy();
+              }
+            },
+            writable: true
+          });
+
+          const fileStream = fs.createWriteStream(safeOutputPath);
+          stream.pipe(fileStream);
+
+          stream.on("end", () => {
+            task.status = "completed";
+            task.progress = 100;
+            if (settings.openFolderWhenComplete && task.outputPath) {
+              shell.showItemInFolder(task.outputPath);
+            }
+            this.broadcastProgress(task);
+            this.downloads.delete(downloadId);
+          });
+
+          stream.on("error", (err: any) => {
+            console.error(`[DownloaderService] YouTube Download ${downloadId} failed:`, err.message);
+            task.status = "failed";
+            task.outputLines.push(`YouTube download error: ${err.message}`);
+            this.broadcastProgress(task);
+            this.downloads.delete(downloadId);
+          });
+        } catch (err: any) {
+          console.error(`[DownloaderService] YouTube Setup Download ${downloadId} failed:`, err.message);
+          task.status = "failed";
+          task.outputLines.push(`YouTube setup error: ${err.message}`);
+          this.broadcastProgress(task);
+          this.downloads.delete(downloadId);
+        }
+      })();
+
+      return downloadId;
+    }
+
     // Use native downloader core if it's an HLS stream
-    if (options.url.includes(".m3u8")) {
+    if (options.url.includes(".m3u8") || options.type === "HLS") {
       // Fix #6 & New Feature: Use defaultSaveFolder as fallback if options.savePath is missing
       const saveDir =
         options.savePath && options.savePath.trim() !== ""
           ? options.savePath
           : settings.defaultSaveFolder || app.getPath("downloads");
-      const outputPath = path.join(saveDir, `${options.title || "video"}.mp4`);
-      task.outputPath = outputPath;
+
+      const safeOutputPath = this.getSafeOutputPath(saveDir, options.title);
+      task.outputPath = safeOutputPath;
 
       // Fix #C: Auto-inject Referer header from origin URL to bypass anti-hotlink protection
       const urlOrigin = (() => {
@@ -246,7 +400,7 @@ export class DownloaderService {
 
       // Fix #1: Handle both success and failure to update task status
       this.downloaderCore
-        .download(options.url, outputPath, downloadOptions)
+        .download(options.url, safeOutputPath, downloadOptions)
         .then(() => {
           task.status = "completed";
           task.progress = 100;
@@ -354,6 +508,13 @@ export class DownloaderService {
     if (options.savePath) {
       args.push("--save-dir", options.savePath);
     }
+
+    // Fix: Explicitly set save name to match our safe output path logic
+    const saveName = path.basename(
+      this.getSafeOutputPath(options.savePath || ".", options.title),
+      ".mp4",
+    );
+    args.push("--save-name", saveName);
 
     // Thread count
     if (options.threadCount || settings.defaultThreadCount) {
@@ -649,5 +810,30 @@ export class DownloaderService {
       }
     }
     this.downloads.clear();
+  }
+
+  private generateRandomName(length: number = 6): string {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
+  private getSafeOutputPath(saveDir: string, title?: string): string {
+    const baseName =
+      title && title.trim() !== "" ? title.trim() : this.generateRandomName(6);
+    let fileName = `${baseName}.mp4`;
+    let fullPath = path.join(saveDir, fileName);
+
+    // If file exists, append random suffix
+    if (existsSync(fullPath)) {
+      const suffix = this.generateRandomName(6);
+      fileName = `${baseName}_${suffix}.mp4`;
+      fullPath = path.join(saveDir, fileName);
+    }
+
+    return fullPath;
   }
 }

@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 import { DecryptionEngine } from "../utils/crypto.js";
+import { fetchWithTimeout } from "../utils/net.js";
 
 export interface DownloadProgress {
   downloadedSegments: number;
@@ -24,19 +25,22 @@ export class SegmentDownloader extends EventEmitter {
     segments: any[],
     onData: (buffer: Buffer, index: number) => Promise<void>,
     headers: Record<string, string> = {},
+    concurrency: number = this.concurrency,
   ) {
     const total = segments.length;
     let completed = 0;
     const startTime = Date.now();
+    let hasError = false;
 
     const worker = async (index: number) => {
       let attempts = 0;
       const segment = segments[index];
       let lastError: Error | null = null;
 
-      while (attempts <= this.retryCount) {
+      let sumError = 0; // Dummy reference
+      while (attempts <= this.retryCount && !hasError) {
         try {
-          const response = await fetch(segment.url, { headers });
+          const response = await fetchWithTimeout(segment.url, { headers });
           if (!response.ok)
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
@@ -53,9 +57,9 @@ export class SegmentDownloader extends EventEmitter {
             }
 
             if (keyUri) {
-              const keyResponse = await fetch(keyUri, { headers });
-              const keyBuffer = Buffer.from(await keyResponse.arrayBuffer());
-              buffer = await this.decryptor.decrypt(buffer, keyBuffer, iv);
+              const keyResponse = await fetchWithTimeout(keyUri, { headers });
+              const keyBuffer = Buffer.from(await keyResponse.arrayBuffer()) as any;
+              buffer = (await this.decryptor.decrypt(buffer, keyBuffer, iv)) as any;
             }
           }
 
@@ -78,7 +82,10 @@ export class SegmentDownloader extends EventEmitter {
         }
       }
 
+      if (hasError) return;
+
       // Fix #4: All retries exhausted — throw so the download can surface the error
+      hasError = true;
       throw new Error(
         `Segment ${index} failed after ${this.retryCount} retries: ${lastError?.message || "unknown error"}`,
       );
@@ -86,10 +93,10 @@ export class SegmentDownloader extends EventEmitter {
 
     // Simple pool implementation
     const queue = [...Array(segments.length).keys()];
-    const workers = Array(Math.min(this.concurrency, segments.length))
+    const workers = Array(Math.min(concurrency, segments.length))
       .fill(null)
       .map(async () => {
-        while (queue.length > 0) {
+        while (queue.length > 0 && !hasError) {
           const index = queue.shift();
           if (index !== undefined) {
             await worker(index);

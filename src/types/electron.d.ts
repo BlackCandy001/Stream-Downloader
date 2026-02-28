@@ -88,6 +88,7 @@ export interface ElectronAPI {
   onDownloadFailed: (callback: (data: any) => void) => () => void;
   onSettingsChanged: (callback: (data: any) => void) => () => void;
   onExtensionStreamDetected: (callback: (data: any) => void) => () => void;
+  onAppMessage: (callback: (data: any) => void) => () => void;
   removeAllListeners: (channel: string) => void;
 }
 

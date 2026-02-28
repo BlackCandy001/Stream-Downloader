@@ -10,10 +10,12 @@
 ## 🌟 Tính năng chính
 
 - ✅ **Hỗ trợ đa định dạng**: HLS (.m3u8), MPEG-DASH (.mpd), Microsoft Smooth Streaming (MSS).
+- ✅ **Native YouTube Support**: Tải video YouTube trực tiếp với chất lượng cao nhất (720p kèm audio), nhận diện thông minh, vượt rào cản 403 Forbidden.
 - ✅ **Giao diện hiện đại**: UI/UX thân thiện, hiệu ứng kính (glassmorphism), Dark Mode mặc định.
 - ✅ **Download song song**: Hỗ trợ đa luồng (multi-threading) tối ưu tốc độ.
 - ✅ **Bỏ qua chống bot**: Tự động phát hiện và trích xuất stream từ trang HTML (AnimeVSub, v.v.).
-- ✅ **Browser Extension**: Tích hợp extension (Chrome/Firefox) để bắt link tự động khi lướt web.
+- ✅ **Browser Extension (SPA Ready)**: Tích hợp extension (Chrome/Firefox) bắt link tự động, hỗ trợ các trang SPA như YouTube không cần load lại trang.
+- ✅ **Quick Actions**: Nút "Mở" trực tiếp trong Sidebar và App để xem link stream ngay lập tức.
 - ✅ **Giải mã mạnh mẽ**: Hỗ trợ AES-128, CENC (Widevine/PlayReady - yêu cầu key), ChaCha20.
 - ✅ **Đa ngôn ngữ**: Hỗ trợ Tiếng Anh, Tiếng Việt, Trung Quốc.
 

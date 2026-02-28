@@ -7,6 +7,7 @@
     "confirm": "Xác nhận",
     "error": "Lỗi",
     "success": "Thành công",
+    "open": "Mở",
     "close": "Đóng",
     "back": "Quay lại",
     "next": "Tiếp theo",
@@ -20,7 +21,9 @@
     "reset": "Đặt lại",
     "yes": "Có",
     "no": "Không",
-    "ok": "OK"
+    "ok": "OK",
+    "selectAll": "Chọn tất cả",
+    "deselectAll": "Bỏ chọn tất cả"
   },
   "app": {
     "title": "Stream Downloader",
@@ -58,7 +61,8 @@
     "customHeaders": "Headers tùy chỉnh",
     "proxy": "Proxy",
     "estimatedSize": "Kích thước ước tính",
-    "streamDetected": "Đã phát hiện luồng mới từ tiện ích mở rộng!"
+    "streamDetected": "Đã phát hiện luồng mới từ tiện ích mở rộng!",
+    "downloadAll": "Tải xuống tất cả"
   },
   "downloads": {
     "title": "Đang tải",
@@ -132,6 +136,8 @@
     "defaultThreadCount": "Số luồng mặc định",
     "defaultSpeedLimit": "Giới hạn tốc độ mặc định",
     "autoMerge": "Tự động gộp sau khi tải",
+    "enableInstantDownload": "Tải xuống tức thì",
+    "enableInstantDownloadDesc": "Tự động bắt đầu tải ngay khi phát hiện luông từ tiện ích mở rộng",
     "deleteTempFiles": "Xóa file tạm sau khi hoàn tất",
     "openFolderWhenComplete": "Mở thư mục khi hoàn tất",
     "sleepWhenComplete": "Ngủ khi hoàn tất tất cả",
@@ -162,9 +168,26 @@
     "homepage": "Trang chủ",
     "checkUpdate": "Kiểm tra cập nhật"
   },
+  "extension": {
+    "title": "Luồng đã phát hiện",
+    "connected": "TIỆN ÍCH ĐÃ KẾT NỐI",
+    "disconnected": "TIỆN ÍCH ĐÃ NGẮT KẾT NỐI",
+    "totalDetected": "TỔNG SỐ PHÁT HIỆN",
+    "hlsStreams": "LUỒNG HLS",
+    "dashStreams": "LUỒNG DASH",
+    "realtimeDetections": "Phát hiện thời gian thực",
+    "downloadAll": "Tải xuống tất cả",
+    "clear": "Xóa tất cả",
+    "refresh": "Làm mới",
+    "howToUse": "Hướng dẫn sử dụng",
+    "step1": "Cài đặt tiện ích từ thư mục extension/ của dự án.",
+    "step2": "Đảm bảo tiện ích đang hoạt động và đã kết nối với ứng dụng này.",
+    "step3": "Truy cập bất kỳ trang video nào; các luồng sẽ được thu thập và liệt kê tại đây tự động."
+  },
   "messages": {
     "parseSuccess": "Phân tích stream thành công",
     "parseError": "Không thể phân tích stream",
+    "instantDownloadAutoStarted": "Đã tự động bắt đầu tải luồng phát hiện được",
     "downloadStarted": "Đã bắt đầu tải xuống",
     "downloadPaused": "Đã tạm dừng tải xuống",
     "downloadResumed": "Đã tiếp tục tải xuống",

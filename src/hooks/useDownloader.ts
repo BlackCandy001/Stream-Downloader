@@ -22,6 +22,8 @@ export interface DownloadOptions {
   headers?: Record<string, string>;
   autoMerge?: boolean;
   customArgs?: string[];
+  title?: string;
+  type?: string;
 }
 
 export function useDownloader() {

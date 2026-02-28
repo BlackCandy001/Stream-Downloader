@@ -1,35 +1,7 @@
+import { fetchWithTimeout } from "../utils/net.js";
 import { Parser } from "m3u8-parser";
 import fs from "fs/promises";
 import path from "path";
-import { app, net } from "electron";
-
-// Fix #5: Wrapper with timeout to avoid hung requests in Electron main process
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit = {},
-  timeoutMs = 30000,
-): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    // Use electron's net.fetch if available for better browser compatibility
-    const fetchFn = typeof net !== "undefined" && net.fetch ? net.fetch : fetch;
-
-    // @ts-ignore
-    const response = await fetchFn(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    return response as unknown as Response;
-  } catch (err: any) {
-    if (err.name === "AbortError") {
-      throw new Error(`Request timed out after ${timeoutMs}ms: ${url}`);
-    }
-    throw new Error(`Fetch failed for ${url}: ${err.message}`);
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 export interface HLSStream {
   id: string;
@@ -52,16 +24,16 @@ export class HLSParser {
   }
 
   /**
-   * Extracts .m3u8 URLs from HTML/text content using regex.
+   * Extracts m3u8/mpd URLs from HTML/text content using robust regex.
+   * Handles escaped slashes and common stream extensions.
    */
   static extractStreamUrls(text: string): string[] {
-    // Regex to find common .m3u8 URL patterns
-    // Matches http/https links ending in .m3u8
-    const m3u8Regex = /https?:\/\/[^\s"'<>]+?\.m3u8[^\s"'<>]*/gi;
-    const matches = text.match(m3u8Regex) || [];
+    const streamRegex =
+      /https?(?::|\\:)(?:\/\/|\\\/\\\/)[^\s"'<>]+?\.(?:m3u8|mpd|m3u)(?:[^\s"'<>]*)/gi;
+    const matches = text.match(streamRegex) || [];
 
-    // Deduplicate and filter out common false positives if any
-    return Array.from(new Set(matches));
+    // Deduplicate and unescape slashes
+    return Array.from(new Set(matches)).map((url) => url.replace(/\\/g, ""));
   }
 
   async parse(
@@ -104,7 +76,9 @@ export class HLSParser {
         console.log(
           `[HLSParser] Full response written to: ${path.resolve(debugPath)}`,
         );
-      } catch (e) {}
+      } catch (e) {
+        console.warn(`[HLSParser] Could not write debug file: ${e}`);
+      }
 
       throw new Error(
         `Server returned non-M3U8 response and no stream URLs could be extracted for: ${url}`,

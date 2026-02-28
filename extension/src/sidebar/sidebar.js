@@ -14,6 +14,9 @@ let appUrl = "127.0.0.1:34567";
 
 // DOM Elements
 const refreshBtn = document.getElementById("refreshBtn");
+const settingsBtn = document.getElementById("settingsBtn");
+const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+const settingsView = document.getElementById("settingsView");
 const searchInput = document.getElementById("searchInput");
 const typeFilter = document.getElementById("typeFilter");
 const streamList = document.getElementById("streamList");
@@ -156,7 +159,21 @@ function renderStreams() {
   // Render stream items
   streamList.innerHTML = filteredStreams
     .map(
-      (stream) => `
+      (stream) => {
+        let thumbnailHtml = "";
+        const isYouTube = stream.type === "YOUTUBE" || stream.url.includes("youtu.be") || stream.url.includes("youtube.com/watch");
+        
+        if (isYouTube) {
+          const thumbnailUrl = getYouTubeThumbnail(stream.url);
+          if (thumbnailUrl) {
+            thumbnailHtml = `
+      <div class="stream-thumbnail" style="margin-top: 8px; margin-bottom: 8px;">
+        <img src="${thumbnailUrl}" style="width: 100%; border-radius: 4px; object-fit: cover; aspect-ratio: 16/9; background-color: #000;" alt="YouTube Thumbnail">
+      </div>`;
+          }
+        }
+
+        return `
     <div class="stream-item" data-id="${stream.id}">
       <div class="stream-header">
         <span class="stream-type ${stream.type?.toLowerCase() || "unknown"}">${stream.type || "UNKNOWN"}</span>
@@ -164,18 +181,23 @@ function renderStreams() {
       </div>
       <div class="stream-url" title="${escapeHtml(stream.url)}">${escapeHtml(stream.url)}</div>
       <div class="stream-meta">
-        📄 ${escapeHtml(stream.pageTitle?.substring(0, 60) || "Unknown page")}
+        ${escapeHtml(stream.pageTitle?.substring(0, 60) || "Unknown page")}
       </div>
+      ${thumbnailHtml}
       <div class="stream-actions">
         <button class="btn btn-secondary btn-copy" data-url="${escapeHtml(stream.url)}">
-          📋 Copy
+          Copy
         </button>
+        <a href="${escapeHtml(stream.url)}" target="_blank" class="btn btn-secondary btn-open" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
+          Mở
+        </a>
         <button class="btn btn-primary btn-send" data-url="${escapeHtml(stream.url)}" ${appConnected ? "" : "disabled"}>
-          📤 Send
+          Send
         </button>
       </div>
     </div>
-  `,
+  `;
+      }
     )
     .join("");
 
@@ -201,6 +223,10 @@ function updateStats() {
   hlsCountEl.textContent = streams.filter((s) => s.type === "HLS").length;
   dashCountEl.textContent = streams.filter((s) => s.type === "DASH").length;
   m3uCountEl.textContent = streams.filter((s) => s.type === "M3U").length;
+
+  // Add YouTube to total but we might not have a stat slot for it yet
+  // If we want it shown specifically, we need to add it to HTML. 
+  // For now it just counts in Total.
 }
 
 // Copy to clipboard
@@ -256,7 +282,15 @@ async function sendAllStreams() {
   let successCount = 0;
   let failCount = 0;
 
-  for (const stream of streams) {
+  // Deduplicate streams by URL before sending
+  const uniqueUrls = new Set();
+  const streamsToSend = streams.filter((stream) => {
+    if (uniqueUrls.has(stream.url)) return false;
+    uniqueUrls.add(stream.url);
+    return true;
+  });
+
+  for (const stream of streamsToSend) {
     try {
       const result = await browserAPI.runtime.sendMessage({
         action: "SEND_TO_APP",
@@ -291,6 +325,19 @@ async function clearAllStreams() {
 
 // Setup event listeners
 function setupEventListeners() {
+  // Settings toggle
+  if (settingsBtn) {
+    settingsBtn.addEventListener("click", () => {
+      settingsView.classList.add("active");
+    });
+  }
+  
+  if (closeSettingsBtn) {
+    closeSettingsBtn.addEventListener("click", () => {
+      settingsView.classList.remove("active");
+    });
+  }
+
   // Refresh button
   refreshBtn.addEventListener("click", async () => {
     refreshBtn.style.transform = "rotate(360deg)";
@@ -389,11 +436,11 @@ function hideLoading() {
 function showNotification(message, type = "info") {
   // Simple notification using browser API if available
   if (type === "success") {
-    console.log("✅", message);
+    console.log("[Success]", message);
   } else if (type === "error") {
-    console.error("❌", message);
+    console.error("[Error]", message);
   } else {
-    console.log("ℹ️", message);
+    console.log("[Info]", message);
   }
 }
 
@@ -413,6 +460,23 @@ function escapeHtml(text) {
   const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
+}
+
+function getYouTubeThumbnail(url) {
+  if (!url) return null;
+  try {
+    let videoId = null;
+    if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1].split('?')[0].split('&')[0];
+    } else if (url.includes('youtube.com/watch')) {
+      const urlObj = new URL(url.startsWith('http') ? url : 'https://' + url);
+      videoId = urlObj.searchParams.get('v');
+    }
+    if (videoId) {
+      return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    }
+  } catch (e) {}
+  return null;
 }
 
 // Start the app

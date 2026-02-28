@@ -16,6 +16,7 @@ import {
   DownloadOutlined,
   ClearOutlined,
   SyncOutlined,
+  ExportOutlined,
 } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components";
@@ -132,7 +133,6 @@ const Extension: React.FC = () => {
 
     const unsubscribe = window.electronAPI.onExtensionStreamDetected(
       (stream) => {
-        // message.success(`Phát hiện stream mới: ${stream.type}`)
         loadStreams();
       },
     );
@@ -166,7 +166,9 @@ const Extension: React.FC = () => {
 
   const handleCopyUrl = async (url: string) => {
     await navigator.clipboard.writeText(url);
-    message.success("URL copied to clipboard");
+    message.success(
+      t("messages.clipboardSuccess") || "URL copied to clipboard",
+    );
   };
 
   const handleDownload = async (stream: any) => {
@@ -176,10 +178,39 @@ const Extension: React.FC = () => {
         selectedStreamIds: ["default"],
         savePath: "",
         threadCount: 16,
+        title: stream.title,
+        type: stream.type,
       });
-      if (result.success) message.success("Download started");
+      if (result.success) message.success(t("messages.downloadStarted"));
     } catch (error: any) {
-      message.error(error.message || "Download failed");
+      message.error(error.message || t("messages.downloadFailed"));
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    if (streams.length === 0) return;
+
+    let successCount = 0;
+    for (const stream of streams) {
+      try {
+        const result = await startDownload({
+          url: stream.url,
+          selectedStreamIds: ["default"],
+          savePath: "",
+          threadCount: 16,
+          title: stream.title,
+          type: stream.type,
+        });
+        if (result.success) successCount++;
+      } catch (e) {
+        console.error("Failed to start batch download for:", stream.url, e);
+      }
+    }
+
+    if (successCount > 0) {
+      message.success(
+        `${t("messages.downloadStarted")} (${successCount}/${streams.length})`,
+      );
     }
   };
 
@@ -190,7 +221,7 @@ const Extension: React.FC = () => {
       });
       setStreams([]);
     } catch (error) {
-      message.error("Failed to clear streams");
+      message.error(t("messages.clearError") || "Failed to clear streams");
     }
   };
 
@@ -257,7 +288,7 @@ const Extension: React.FC = () => {
     {
       title: "ACTIONS",
       key: "actions",
-      width: 160,
+      width: 220,
       render: (_: any, record: any) => (
         <Space size={12}>
           <Tooltip title="Copy URL">
@@ -273,12 +304,28 @@ const Extension: React.FC = () => {
             />
           </Tooltip>
           <Button
+            icon={<ExportOutlined />}
+            onClick={() => window.open(record.url, "_blank")}
+            style={{
+              borderRadius: "10px",
+              height: "36px",
+              background: "var(--surface)",
+              border: "1px solid var(--glass-border)",
+              color: "var(--primary)",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px"
+            }}
+          >
+            {t("common.open")}
+          </Button>
+          <Button
             type="primary"
             icon={<DownloadOutlined />}
             onClick={() => handleDownload(record)}
             style={{ borderRadius: "10px", height: "36px" }}
           >
-            Download
+            {t("home.downloadButton")}
           </Button>
         </Space>
       ),
@@ -290,29 +337,31 @@ const Extension: React.FC = () => {
       <TitleHeader>
         <h1>
           <LinkOutlined style={{ color: "var(--primary)" }} />
-          Detected Streams
+          {t("extension.title")}
         </h1>
         <ConnectionBadge $connected={appConnected}>
-          {appConnected ? "EXTENSION CONNECTED" : "EXTENSION DISCONNECTED"}
+          {appConnected
+            ? t("extension.connected")
+            : t("extension.disconnected")}
         </ConnectionBadge>
       </TitleHeader>
 
       <StatsGrid>
         <StatCard>
           <div className="value">{streams.length}</div>
-          <div className="label">TOTAL DETECTED</div>
+          <div className="label">{t("extension.totalDetected")}</div>
         </StatCard>
         <StatCard>
           <div className="value">
             {streams.filter((s) => s.type === "HLS").length}
           </div>
-          <div className="label">HLS STREAMS</div>
+          <div className="label">{t("extension.hlsStreams")}</div>
         </StatCard>
         <StatCard>
           <div className="value">
             {streams.filter((s) => s.type === "DASH").length}
           </div>
-          <div className="label">DASH STREAMS</div>
+          <div className="label">{t("extension.dashStreams")}</div>
         </StatCard>
       </StatsGrid>
 
@@ -320,7 +369,7 @@ const Extension: React.FC = () => {
         title={
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <SyncOutlined spin={loading} style={{ color: "var(--primary)" }} />
-            <span>Real-time Detections</span>
+            <span>{t("extension.realtimeDetections")}</span>
           </div>
         }
         extra={
@@ -335,7 +384,21 @@ const Extension: React.FC = () => {
                 borderRadius: "10px",
               }}
             >
-              Refresh
+              {t("extension.refresh")}
+            </Button>
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadAll}
+              disabled={streams.length === 0}
+              style={{
+                borderRadius: "10px",
+                height: "32px",
+                background: "var(--gradient-primary)",
+                border: "none",
+              }}
+            >
+              {t("extension.downloadAll")}
             </Button>
             <Button
               danger
@@ -344,7 +407,7 @@ const Extension: React.FC = () => {
               disabled={streams.length === 0}
               style={{ borderRadius: "10px", height: "32px" }}
             >
-              Clear
+              {t("extension.clear")}
             </Button>
           </Space>
         }
@@ -379,7 +442,7 @@ const Extension: React.FC = () => {
               marginBottom: 16,
             }}
           >
-            How to use
+            {t("extension.howToUse")}
           </h3>
           <div
             style={{
@@ -398,8 +461,7 @@ const Extension: React.FC = () => {
               >
                 01
               </span>
-              Install the extension from the project <code>extension/</code>{" "}
-              folder.
+              {t("extension.step1")}
             </div>
             <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
               <span
@@ -411,7 +473,7 @@ const Extension: React.FC = () => {
               >
                 02
               </span>
-              Ensure the extension is active and connected to this application.
+              {t("extension.step2")}
             </div>
             <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
               <span
@@ -423,8 +485,7 @@ const Extension: React.FC = () => {
               >
                 03
               </span>
-              Browse any video site; streams will be captured and listed here
-              automatically.
+              {t("extension.step3")}
             </div>
           </div>
         </div>

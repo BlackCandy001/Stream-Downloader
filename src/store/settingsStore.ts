@@ -30,7 +30,7 @@ const defaultSettings: Settings = {
   startOnBoot: false,
   minimizeToTray: true,
   checkForUpdates: true,
-  defaultSaveFolder: '',
+  defaultSaveFolder: '', // Set by backend if empty
   maxConcurrentDownloads: 3,
   defaultThreadCount: 8,
   defaultSpeedLimit: undefined,

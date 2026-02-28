@@ -152,6 +152,8 @@ const Settings: React.FC = () => {
           const result = await window.electronAPI.appResetData();
           if (result.success) {
             message.success(t("messages.factoryResetSuccess"));
+            // Clear frontend persist storage (Zustand, etc)
+            localStorage.clear();
             // Reload settings and potentially redirect
             await loadSettings();
             window.location.reload();
@@ -310,26 +312,28 @@ const Settings: React.FC = () => {
                       label={
                         <FormLabel>{t("settings.defaultSaveFolder")}</FormLabel>
                       }
-                      name="defaultSaveFolder"
                     >
-                      <Input
-                        addonAfter={
-                          <Button
-                            type="text"
-                            icon={<FolderOpenOutlined />}
-                            onClick={async () => {
-                              const path =
-                                await window.electronAPI.filePickFolder();
-                              if (path) {
-                                form.setFieldValue("defaultSaveFolder", path);
-                              }
-                            }}
-                            style={{ color: "var(--primary)" }}
-                          >
-                            {t("home.browse")}
-                          </Button>
-                        }
-                      />
+                      <Space.Compact style={{ width: "100%" }}>
+                        <Form.Item name="defaultSaveFolder" noStyle>
+                          <Input style={{ flex: 1 }} />
+                        </Form.Item>
+                        <Button
+                          icon={<FolderOpenOutlined />}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            const path =
+                              await window.electronAPI.filePickFolder();
+                            if (path) {
+                              form.setFieldsValue({
+                                defaultSaveFolder: path,
+                              });
+                            }
+                          }}
+                          style={{ color: "var(--primary)" }}
+                        >
+                          {t("home.browse")}
+                        </Button>
+                      </Space.Compact>
                     </Form.Item>
 
                     <div
@@ -377,16 +381,24 @@ const Settings: React.FC = () => {
                       }
                       name="defaultSpeedLimit"
                     >
-                      <InputNumber
-                        style={{ width: "240px" }}
-                        placeholder={t("home.unlimited")}
-                        addonAfter={
-                          <span style={{ color: "var(--text-muted)" }}>
-                            MB/s
-                          </span>
-                        }
-                        min={0}
-                      />
+                      <Space.Compact style={{ width: "240px" }}>
+                        <InputNumber
+                          style={{ flex: 1 }}
+                          placeholder={t("home.unlimited")}
+                          min={0}
+                        />
+                        <Button
+                          disabled
+                          style={{
+                            background: "var(--surface)",
+                            border: "1px solid var(--glass-border)",
+                            borderLeft: "none",
+                            color: "var(--text-muted)",
+                          }}
+                        >
+                          MB/s
+                        </Button>
+                      </Space.Compact>
                     </Form.Item>
 
                     <Divider
@@ -433,6 +445,27 @@ const Settings: React.FC = () => {
                       >
                         <Switch />
                       </Form.Item>
+
+                      <Form.Item
+                        label={
+                          <FormLabel>
+                            {t("settings.enableInstantDownload")}
+                          </FormLabel>
+                        }
+                        extra={
+                          <span
+                            style={{ fontSize: 12, color: "var(--text-muted)" }}
+                          >
+                            {t("settings.enableInstantDownloadDesc")}
+                          </span>
+                        }
+                        name="enableInstantDownload"
+                        valuePropName="checked"
+                        layout="horizontal"
+                        style={{ marginBottom: 0 }}
+                      >
+                        <Switch />
+                      </Form.Item>
                     </Space>
                   </div>
                 ),
@@ -446,17 +479,15 @@ const Settings: React.FC = () => {
                       label={<FormLabel>FFmpeg Executable Path</FormLabel>}
                       name="ffmpegPath"
                     >
-                      <Input
-                        addonAfter={
-                          <Button
-                            type="text"
-                            onClick={handleAutoDetectFFmpeg}
-                            style={{ color: "var(--primary)" }}
-                          >
-                            {t("settings.autoDetect")}
-                          </Button>
-                        }
-                      />
+                      <Space.Compact style={{ width: "100%" }}>
+                        <Input style={{ flex: 1 }} />
+                        <Button
+                          onClick={handleAutoDetectFFmpeg}
+                          style={{ color: "var(--primary)" }}
+                        >
+                          {t("settings.autoDetect")}
+                        </Button>
+                      </Space.Compact>
                     </Form.Item>
 
                     <div
@@ -472,15 +503,20 @@ const Settings: React.FC = () => {
                         }
                         name="requestTimeout"
                       >
-                        <InputNumber
-                          style={{ width: "100%" }}
-                          min={1}
-                          addonAfter={
-                            <span style={{ color: "var(--text-muted)" }}>
-                              {t("units.seconds")}
-                            </span>
-                          }
-                        />
+                        <Space.Compact style={{ width: "100%" }}>
+                          <InputNumber style={{ flex: 1 }} min={1} />
+                          <Button
+                            disabled
+                            style={{
+                              background: "var(--surface)",
+                              border: "1px solid var(--glass-border)",
+                              borderLeft: "none",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            {t("units.seconds")}
+                          </Button>
+                        </Space.Compact>
                       </Form.Item>
 
                       <Form.Item

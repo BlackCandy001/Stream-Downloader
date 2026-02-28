@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Checkbox, Radio, Space, Tag, Typography } from "antd";
+import { Card, Checkbox, Radio, Space, Tag, Typography, Button } from "antd";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components";
 
@@ -165,13 +165,54 @@ const StreamSelector: React.FC<StreamSelectorProps> = ({
     }
   };
 
+  const selectAll = (type: string) => {
+    if (type === "video") {
+      setSelectedVideo(videoStreams.map((s) => s.id));
+    } else if (type === "audio") {
+      setSelectedAudio(audioStreams.map((s) => s.id));
+    } else if (type === "subtitle") {
+      setSelectedSubs(subtitleStreams.map((s) => s.id));
+    }
+  };
+
+  const deselectAll = (type: string) => {
+    if (type === "video") setSelectedVideo([]);
+    else if (type === "audio") setSelectedAudio([]);
+    else if (type === "subtitle") setSelectedSubs([]);
+  };
+
   return (
     <SelectorContainer>
       {videoStreams.length > 0 && (
         <div>
           <SectionTitle>
-            <span className="icon">🎬</span>
-            <span>{t("home.videoQuality")}</span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                flex: 1,
+              }}
+            >
+              <span className="icon">🎬</span>
+              <span>{t("home.videoQuality")}</span>
+            </div>
+            <Space>
+              <Button
+                size="small"
+                type="link"
+                onClick={() => selectAll("video")}
+              >
+                {t("common.selectAll") || "Select All"}
+              </Button>
+              <Button
+                size="small"
+                type="link"
+                onClick={() => deselectAll("video")}
+              >
+                {t("common.deselectAll") || "Deselect All"}
+              </Button>
+            </Space>
           </SectionTitle>
           {videoStreams.map((stream) => (
             <StyledStreamCard
@@ -221,8 +262,33 @@ const StreamSelector: React.FC<StreamSelectorProps> = ({
       {audioStreams.length > 0 && (
         <div>
           <SectionTitle>
-            <span className="icon">🔊</span>
-            <span>{t("home.audioTracks")}</span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                flex: 1,
+              }}
+            >
+              <span className="icon">🔊</span>
+              <span>{t("home.audioTracks")}</span>
+            </div>
+            <Space>
+              <Button
+                size="small"
+                type="link"
+                onClick={() => selectAll("audio")}
+              >
+                {t("common.selectAll")}
+              </Button>
+              <Button
+                size="small"
+                type="link"
+                onClick={() => deselectAll("audio")}
+              >
+                {t("common.deselectAll")}
+              </Button>
+            </Space>
           </SectionTitle>
           {audioStreams.map((stream) => (
             <StyledStreamCard
@@ -255,8 +321,33 @@ const StreamSelector: React.FC<StreamSelectorProps> = ({
       {subtitleStreams.length > 0 && (
         <div>
           <SectionTitle>
-            <span className="icon">📝</span>
-            <span>{t("home.subtitles")}</span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                flex: 1,
+              }}
+            >
+              <span className="icon">📝</span>
+              <span>{t("home.subtitles")}</span>
+            </div>
+            <Space>
+              <Button
+                size="small"
+                type="link"
+                onClick={() => selectAll("subtitle")}
+              >
+                {t("common.selectAll")}
+              </Button>
+              <Button
+                size="small"
+                type="link"
+                onClick={() => deselectAll("subtitle")}
+              >
+                {t("common.deselectAll")}
+              </Button>
+            </Space>
           </SectionTitle>
           {subtitleStreams.map((stream) => (
             <StyledStreamCard
