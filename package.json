@@ -4,7 +4,7 @@
   "description": "Desktop application for downloading HLS/DASH/MSS video streams",
   "main": "dist-electron/main.js",
   "type": "module",
-  "author": "Nilaoda",
+  "author": "Black Candy",
   "license": "MIT",
   "scripts": {
     "dev": "vite",

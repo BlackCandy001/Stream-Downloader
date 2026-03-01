@@ -35,37 +35,19 @@
 # 1. Clone repository
 git clone <url-repo>
 cd N_m3u8DL-RE/src/APP
-
-# 2. Cài đặt thư viện
-npm install
-
-# 3. Chạy ứng dụng
-# Terminal 1: Chạy frontend
-npm run dev
-# Terminal 2: Chạy Electron app
-npm run electron:dev
 ```
 
-### Build bản cài đặt (.exe)
+Mã nguồn gốc lõi của ứng dụng dựa trên dự án open-source `N_m3u8DL-RE`. Nhánh ứng dụng mở rộng phần tuỳ biến GUI Desktop này được xây dựng bởi **Black Candy**.
 
-```bash
-npm run electron:build
-```
+## 🛠 Hướng dẫn Cài đặt & Sử dụng (Tiện ích mở rộng tự bắt m3u8)
 
-_Kết quả sẽ nằm trong thư mục `dist-release/`._
+Để tiện lợi nhất trong việc sử dụng app tải video, bạn cần cài đặt **Tiện ích mở rộng Stream Downloader** trên trình duyệt Chrome/Edge của mình để tự động bắt link video m3u8 và đẩy thẳng qua app.
 
----
-
-## 🧩 Browser Extension Integration
-
-Hệ thống cho phép bạn bắt link video tự động từ trình duyệt và gửi trực tiếp về app.
-
-### Cài đặt Extension
-
-1. Mở trang quản lý extension của trình duyệt (`chrome://extensions` hoặc `about:debugging`).
-2. Bật **Developer mode**.
-3. Chọn **Load unpacked** và trỏ đến thư mục `extension/` trong project.
-4. **Firefox Sidebar**: Extension hỗ trợ Sidebar chuyên dụng cho Firefox.
+1. Tải về hoặc clone project này.
+2. Mở trình duyệt Chrome/Edge, truy cập vào trang Tiện ích mở rộng.
+3. Bật **Developer mode**.
+4. Chọn **Load unpacked** và trỏ đến thư mục `extension/` trong project.
+5. **Firefox Sidebar**: Extension hỗ trợ Sidebar chuyên dụng cho Firefox.
 
 ### Giao tiếp (Port Configuration)
 

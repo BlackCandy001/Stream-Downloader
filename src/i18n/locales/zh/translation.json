@@ -157,6 +157,7 @@
     "version": "版本",
     "description": "用于下载 HLS/DASH/MSS 视频流的桌面应用程序",
     "author": "作者",
+    "developer": "Black Candy",
     "license": "许可证",
     "homepage": "主页",
     "checkUpdate": "检查更新"

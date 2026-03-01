@@ -130,7 +130,11 @@ const About: React.FC = () => {
 
         <DetailsGrid>
           <div className="detail-item">
-            <div className="label">License</div>
+            <div className="label">{t("about.developer") || "Developer"}</div>
+            <div className="value">Black Candy</div>
+          </div>
+          <div className="detail-item">
+            <div className="label">{t("about.license") || "License"}</div>
             <div className="value">MIT Open Source</div>
           </div>
           <div className="detail-item">
@@ -151,7 +155,7 @@ const About: React.FC = () => {
             type="primary"
             icon={<HomeOutlined />}
             onClick={() => {
-              window.open("https://github.com/nilaoda/N_m3u8DL-RE", "_blank");
+              window.open("https://github.com/BlackCandy001/Stream-Downloader", "_blank");
             }}
             style={{
               borderRadius: "12px",
@@ -166,7 +170,7 @@ const About: React.FC = () => {
             size="large"
             icon={<GithubOutlined />}
             onClick={() => {
-              window.open("https://github.com/nilaoda/N_m3u8DL-RE", "_blank");
+              window.open("https://github.com/BlackCandy001/Stream-Downloader", "_blank");
             }}
             style={{
               borderRadius: "12px",

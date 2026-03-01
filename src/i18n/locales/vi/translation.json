@@ -164,6 +164,7 @@
     "version": "Phiên bản",
     "description": "Ứng dụng desktop để tải video stream HLS/DASH/MSS",
     "author": "Tác giả",
+    "developer": "Black Candy",
     "license": "Giấy phép",
     "homepage": "Trang chủ",
     "checkUpdate": "Kiểm tra cập nhật"
