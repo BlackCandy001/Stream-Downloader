@@ -149,11 +149,11 @@ const About: React.FC = () => {
           </div>
         </DetailsGrid>
 
-        <Space size={20} style={{ marginTop: 20 }}>
+        <div style={{ marginTop: 20, textAlign: "center" }}>
           <Button
             size="large"
             type="primary"
-            icon={<HomeOutlined />}
+            icon={<GithubOutlined />}
             onClick={() => {
               window.open("https://github.com/BlackCandy001/Stream-Downloader", "_blank");
             }}
@@ -164,26 +164,9 @@ const About: React.FC = () => {
               fontWeight: 600,
             }}
           >
-            {t("about.homepage")}
-          </Button>
-          <Button
-            size="large"
-            icon={<GithubOutlined />}
-            onClick={() => {
-              window.open("https://github.com/BlackCandy001/Stream-Downloader", "_blank");
-            }}
-            style={{
-              borderRadius: "12px",
-              height: "48px",
-              padding: "0 24px",
-              background: "var(--surface)",
-              border: "1px solid var(--glass-border)",
-              color: "var(--text-main)",
-            }}
-          >
             GitHub Repo
           </Button>
-        </Space>
+        </div>
 
         <div
           style={{
