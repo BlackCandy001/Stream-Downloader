@@ -155,7 +155,7 @@ const About: React.FC = () => {
             type="primary"
             icon={<GithubOutlined />}
             onClick={() => {
-              window.open("https://github.com/BlackCandy001/Stream-Downloader", "_blank");
+              window.electronAPI.appOpenExternal("https://github.com/BlackCandy001/Stream-Downloader");
             }}
             style={{
               borderRadius: "12px",

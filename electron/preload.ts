@@ -53,6 +53,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   appGetVersion: () => ipcRenderer.invoke("app:getVersion"),
   appGetPlatform: () => ipcRenderer.invoke("app:getPlatform"),
   appResetData: () => ipcRenderer.invoke("app:resetData"),
+  appOpenExternal: (url: string) => ipcRenderer.invoke("app:openExternal", url),
 
   // Stream Parsing
   streamParse: (url: string, options: any) =>
@@ -173,6 +174,7 @@ declare global {
       appGetVersion: () => Promise<string>;
       appGetPlatform: () => Promise<"win" | "mac" | "linux">;
       appResetData: () => Promise<{ success: boolean }>;
+      appOpenExternal: (url: string) => Promise<{ success: boolean }>;
 
       // Stream Parsing
       streamParse: (url: string, options: any) => Promise<any>;

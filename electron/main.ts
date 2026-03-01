@@ -136,6 +136,11 @@ function setupIpcHandlers() {
     return process.platform as "win" | "mac" | "linux";
   });
 
+  ipcMain.handle("app:openExternal", async (_, url: string) => {
+    await shell.openExternal(url);
+    return { success: true };
+  });
+
   // ============= STREAM PARSING =============
   ipcMain.handle("stream:parse", async (_, url: string, options: any) => {
     try {
