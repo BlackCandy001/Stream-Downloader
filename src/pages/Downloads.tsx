@@ -37,18 +37,22 @@ const Title = styled.h1`
   font-size: 32px;
   font-weight: 800;
   margin-bottom: 32px;
-  background: var(--gradient-text);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-main);
   letter-spacing: -1px;
 `;
 
-const TaskCard = styled.div`
-  background: var(--glass);
+const DownloadList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const DownloadItem = styled(Card)`
+  border-radius: 16px !important;
+  background: var(--bg-secondary);
   backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  padding: 24px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-bottom: 20px;
   display: flex;
   flex-direction: column;
@@ -57,7 +61,7 @@ const TaskCard = styled.div`
 
   &:hover {
     background: var(--surface-hover);
-    border-color: rgba(56, 189, 248, 0.3);
+    border-color: var(--primary-light);
     transform: translateY(-2px);
   }
 `;
@@ -208,8 +212,8 @@ const Downloads: React.FC = () => {
               icon={<ClearOutlined />}
               style={{
                 borderRadius: "10px",
-                background: "var(--surface)",
-                border: "1px solid var(--glass-border)",
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border-color)",
                 color: "var(--text-muted)",
               }}
             >
@@ -224,7 +228,7 @@ const Downloads: React.FC = () => {
           style={{
             textAlign: "center",
             padding: "64px 0",
-            background: "var(--glass)",
+            background: "var(--bg-secondary)",
           }}
         >
           <Empty
@@ -236,9 +240,9 @@ const Downloads: React.FC = () => {
           />
         </Card>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column" }}>
+        <DownloadList>
           {downloads.map((task) => (
-            <TaskCard key={task.id}>
+            <DownloadItem key={task.id}>
               <CardHeader>
                 <div className="file-info">
                   <span className="filename">
@@ -262,8 +266,8 @@ const Downloads: React.FC = () => {
                           icon={<PauseCircleOutlined />}
                           onClick={() => handlePause(task.id)}
                           style={{
-                            background: "var(--surface)",
-                            border: "1px solid var(--glass-border)",
+                            background: "var(--bg-secondary)",
+                            border: "1px solid var(--border-color)",
                             color: "var(--text-main)",
                           }}
                         />
@@ -313,8 +317,8 @@ const Downloads: React.FC = () => {
                             }
                           }}
                           style={{
-                            background: "var(--surface)",
-                            border: "1px solid var(--glass-border)",
+                            background: "var(--bg-secondary)",
+                            border: "1px solid var(--border-color)",
                             color: "var(--primary)",
                           }}
                         />
@@ -345,8 +349,8 @@ const Downloads: React.FC = () => {
                           shape="circle"
                           icon={<DeleteOutlined />}
                           style={{
-                            background: "var(--surface)",
-                            border: "1px solid var(--glass-border)",
+                            background: "var(--bg-secondary)",
+                            border: "1px solid var(--border-color)",
                             color: "var(--text-muted)",
                           }}
                         />
@@ -406,9 +410,9 @@ const Downloads: React.FC = () => {
                   </div>
                 )}
               </StatsGrid>
-            </TaskCard>
+            </DownloadItem>
           ))}
-        </div>
+        </DownloadList>
       )}
     </DownloadsContainer>
   );

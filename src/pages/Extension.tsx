@@ -38,9 +38,7 @@ const TitleHeader = styled.div`
     font-size: 32px;
     font-weight: 800;
     margin: 0;
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--text-main);
     letter-spacing: -1px;
     display: flex;
     align-items: center;
@@ -56,8 +54,8 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled.div`
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
   padding: 24px;
   display: flex;
@@ -110,8 +108,8 @@ const ConnectionBadge = styled.div<{ $connected: boolean }>`
 
 const StyledCard = styled(Card)`
   border-radius: 24px !important;
-  border: 1px solid var(--glass-border) !important;
-  background: var(--glass) !important;
+  border: 1px solid var(--border-color) !important;
+  background: var(--bg-secondary) !important;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
 
   .ant-card-body {
@@ -297,8 +295,8 @@ const Extension: React.FC = () => {
               icon={<CopyOutlined />}
               onClick={() => handleCopyUrl(record.url)}
               style={{
-                background: "var(--surface)",
-                border: "1px solid var(--glass-border)",
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border-color)",
                 color: "var(--text-main)",
               }}
             />

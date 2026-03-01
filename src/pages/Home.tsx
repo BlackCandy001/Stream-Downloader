@@ -32,6 +32,14 @@ const HomeContainer = styled.div`
   padding: 40px 20px;
 `;
 
+const Title = styled.h1`
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 32px;
+  color: var(--text-main);
+  letter-spacing: -1px;
+`;
+
 const HeroSection = styled.div`
   text-align: center;
   margin-bottom: 48px;
@@ -52,24 +60,25 @@ const HeroSection = styled.div`
   }
 `;
 
-const UrlInputContainer = styled.div`
-  position: relative;
-  background: var(--surface);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+const UrlInputCard = styled(Card)`
+  border-radius: 16px !important;
+  background: var(--bg-secondary) !important;
   backdrop-filter: blur(12px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  transition: all 0.3s ease;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+
+  .ant-card-body {
+    padding: 8px !important;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 
   &:focus-within {
-    border-color: var(--primary);
+    border-color: var(--primary) !important;
     box-shadow:
       0 0 0 4px var(--primary-glow),
-      0 20px 40px rgba(0, 0, 0, 0.4);
+      0 4px 12px rgba(0, 0, 0, 0.05) !important;
   }
 
   .url-input {
@@ -90,11 +99,11 @@ const UrlInputContainer = styled.div`
 const ConfigCard = styled(Card)`
   margin-top: 32px;
   border-radius: 24px !important;
-  border: 1px solid var(--glass-border) !important;
-  background: var(--glass) !important;
+  border: 1px solid var(--border-color) !important;
+  background: var(--bg-secondary) !important;
 
   .ant-card-head {
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--border-color);
     background: transparent;
 
     .ant-card-head-title {
@@ -234,11 +243,11 @@ const Home: React.FC = () => {
   return (
     <HomeContainer className="animate-in">
       <HeroSection>
-        <h1>{t("home.title")}</h1>
+        <Title>{t("home.title")}</Title>
         <p>Paste your stream link below to begin processing.</p>
       </HeroSection>
 
-      <UrlInputContainer>
+      <UrlInputCard>
         <Input
           className="url-input"
           value={url}
@@ -255,8 +264,8 @@ const Home: React.FC = () => {
               onClick={handlePaste}
               disabled={loading}
               style={{
-                background: "var(--surface)",
-                border: "1px solid var(--glass-border)",
+                background: "var(--bg-secondary)",
+                border: "1px solid var(--border-color)",
                 color: "var(--text-main)",
               }}
             />
@@ -271,7 +280,7 @@ const Home: React.FC = () => {
             {t("home.parseButton")}
           </Button>
         </Space>
-      </UrlInputContainer>
+      </UrlInputCard>
 
       {streams.length > 0 && (
         <div style={{ marginTop: 48 }}>
@@ -379,8 +388,8 @@ const Home: React.FC = () => {
                       disabled
                       style={{
                         borderRadius: "0 8px 8px 0",
-                        background: "var(--surface)",
-                        border: "1px solid var(--glass-border)",
+                        background: "var(--bg-secondary)",
+                        border: "1px solid var(--border-color)",
                         borderLeft: "none",
                         color: "var(--text-muted)",
                       }}

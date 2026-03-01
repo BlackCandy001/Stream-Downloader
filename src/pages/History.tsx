@@ -40,18 +40,15 @@ const TitleArrangement = styled.div`
     font-size: 32px;
     font-weight: 800;
     margin: 0;
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: -1px;
+    color: var(--text-main);
   }
 `;
 
 const StyledCard = styled(Card)`
-  border-radius: 24px !important;
-  border: 1px solid var(--glass-border) !important;
-  background: var(--glass) !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border-color) !important;
+  background: var(--bg-secondary) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
 
   .ant-card-body {
     padding: 24px;
@@ -191,8 +188,8 @@ const History: React.FC = () => {
                 }
               }}
               style={{
-                background: "var(--surface)",
-                border: "1px solid var(--glass-border)",
+                background: "var(--bg-tertiary)",
+                border: "1px solid var(--border-color)",
                 color: "var(--primary)",
               }}
             />

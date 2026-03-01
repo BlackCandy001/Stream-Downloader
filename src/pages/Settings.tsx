@@ -35,20 +35,18 @@ const Title = styled.h1`
   font-size: 32px;
   font-weight: 800;
   margin-bottom: 32px;
-  background: var(--gradient-text);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-main);
   letter-spacing: -1px;
 `;
 
 const StyledCard = styled(Card)`
-  border-radius: 24px !important;
-  border: 1px solid var(--glass-border) !important;
-  background: var(--glass) !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border-color) !important;
+  background: var(--bg-secondary) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
 
   .ant-card-head {
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--border-color);
     padding: 0 24px;
     height: 72px;
     display: flex;
@@ -69,7 +67,7 @@ const StyledCard = styled(Card)`
   .ant-tabs-nav {
     margin-bottom: 32px !important;
     &::before {
-      border-bottom: 1px solid var(--glass-border) !important;
+      border-bottom: 1px solid var(--border-color) !important;
     }
   }
 
@@ -90,7 +88,7 @@ const StyledCard = styled(Card)`
   }
 
   .ant-tabs-ink-bar {
-    background: var(--gradient-primary) !important;
+    background: var(--primary) !important;
     height: 3px !important;
     border-radius: 3px;
   }
@@ -198,7 +196,7 @@ const Settings: React.FC = () => {
                 onClick={handleReset}
                 style={{
                   background: "transparent",
-                  border: "1px solid var(--glass-border)",
+                  border: "1px solid var(--border-color)",
                   color: "var(--text-muted)",
                   borderRadius: "10px",
                 }}
@@ -390,8 +388,8 @@ const Settings: React.FC = () => {
                         <Button
                           disabled
                           style={{
-                            background: "var(--surface)",
-                            border: "1px solid var(--glass-border)",
+                            background: "var(--bg-tertiary)",
+                            border: "1px solid var(--border-color)",
                             borderLeft: "none",
                             color: "var(--text-muted)",
                           }}
@@ -508,8 +506,8 @@ const Settings: React.FC = () => {
                           <Button
                             disabled
                             style={{
-                              background: "var(--surface)",
-                              border: "1px solid var(--glass-border)",
+                              background: "var(--bg-tertiary)",
+                              border: "1px solid var(--border-color)",
                               borderLeft: "none",
                               color: "var(--text-muted)",
                             }}

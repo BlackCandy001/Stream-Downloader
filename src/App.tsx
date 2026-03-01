@@ -20,26 +20,43 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Check theme
-    const isDark =
-      settings.theme === "dark" ||
-      (settings.theme === "auto" &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches);
-    setIsDarkMode(isDark);
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
-    // Apply theme class to body
-    if (isDark) {
-      document.body.classList.remove("light-theme");
-    } else {
-      document.body.classList.add("light-theme");
-    }
+    const updateTheme = () => {
+      const isDark =
+        settings.theme === "dark" ||
+        (settings.theme === "auto" && mediaQuery.matches);
+      
+      setIsDarkMode(isDark);
+
+      if (isDark) {
+        document.body.classList.remove("light-theme");
+        document.body.classList.add("dark-theme");
+      } else {
+        document.body.classList.remove("dark-theme");
+        document.body.classList.add("light-theme");
+      }
+    };
+
+    updateTheme();
+
+    const listener = () => updateTheme();
+    mediaQuery.addEventListener("change", listener);
+
+    return () => mediaQuery.removeEventListener("change", listener);
   }, [settings.theme]);
 
   const antdTheme = {
     algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
     token: {
-      colorPrimary: "#1890ff",
-      borderRadius: 8,
+      colorPrimary: isDarkMode ? "#ffffff" : "#000000",
+      colorBgContainer: isDarkMode ? "#121212" : "#ffffff",
+      colorBgElevated: isDarkMode ? "#1f1f1f" : "#f0f0f0",
+      colorBorder: isDarkMode ? "#444444" : "#cccccc",
+      colorText: isDarkMode ? "#ffffff" : "#111111",
+      colorTextSecondary: isDarkMode ? "#aaaaaa" : "#666666",
+      borderRadius: 6,
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     },
   };
 

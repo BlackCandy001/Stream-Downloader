@@ -23,13 +23,13 @@ interface LayoutProps {
 const StyledLayout = styled(AntLayout)`
   height: 100vh;
   overflow: hidden;
-  background: var(--bg-dark);
+  background: var(--bg-color);
 `;
 
 const StyledSider = styled(Sider)`
-  background: var(--bg-darker) !important;
-  border-right: 1px solid var(--glass-border);
-  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
+  background: var(--bg-secondary) !important;
+  border-right: 1px solid var(--border-color);
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05);
 
   .ant-menu {
     background: transparent !important;
@@ -39,37 +39,35 @@ const StyledSider = styled(Sider)`
 
   .ant-menu-item {
     margin: 8px 12px !important;
-    border-radius: 12px !important;
+    border-radius: 8px !important;
     width: calc(100% - 24px) !important;
     color: var(--text-muted) !important;
     transition: all 0.3s ease !important;
 
     &:hover {
       color: var(--text-main) !important;
-      background: var(--surface) !important;
+      background: var(--bg-tertiary) !important;
     }
   }
 
   .ant-menu-item-selected {
-    background: var(--gradient-primary) !important;
-    color: white !important;
-    box-shadow: 0 4px 12px var(--primary-glow);
+    background: var(--primary) !important;
+    color: var(--bg-color) !important;
+    box-shadow: none;
 
     .anticon {
-      color: white !important;
+      color: var(--bg-color) !important;
     }
   }
 `;
 
 const StyledHeader = styled(Header)`
-  background: var(--glass) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--bg-color) !important;
   padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--border-color);
   height: 64px;
 `;
 
@@ -87,19 +85,16 @@ const Logo = styled.div<{ $collapsed: boolean }>`
   justify-content: ${(props) => (props.$collapsed ? "center" : "flex-start")};
   padding: 0 24px;
   gap: 12px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--border-color);
 
   .logo-icon {
     font-size: 24px;
-    filter: drop-shadow(0 0 8px var(--primary));
   }
 
   .logo-text {
     font-size: 18px;
     font-weight: 700;
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--text-main);
     letter-spacing: -0.5px;
     white-space: nowrap;
   }

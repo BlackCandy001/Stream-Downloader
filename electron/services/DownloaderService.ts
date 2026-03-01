@@ -822,8 +822,12 @@ export class DownloaderService {
   }
 
   private getSafeOutputPath(saveDir: string, title?: string): string {
-    const baseName =
+    let baseName =
       title && title.trim() !== "" ? title.trim() : this.generateRandomName(6);
+      
+    // Sanitize filename to remove invalid characters, especially for Windows
+    baseName = baseName.replace(/[<>:"/\\|?*]+/g, "-").replace(/\s+/g, " ");
+
     let fileName = `${baseName}.mp4`;
     let fullPath = path.join(saveDir, fileName);
 
