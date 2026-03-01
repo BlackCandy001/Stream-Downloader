@@ -29,6 +29,7 @@ export interface ElectronAPI {
   appGetVersion: () => Promise<string>;
   appGetPlatform: () => Promise<"win" | "mac" | "linux">;
   appResetData: () => Promise<{ success: boolean }>;
+  appOpenExternal: (url: string) => Promise<{ success: boolean }>;
 
   // Stream Parsing
   streamParse: (url: string, options: any) => Promise<any>;
