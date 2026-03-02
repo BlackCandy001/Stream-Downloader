@@ -102,4 +102,4 @@ MIT License. Xem file [LICENSE](LICENSE) để biết thêm chi tiết.
 
 ---
 
-Made with ❤️ by Stream Downloader Team
+Made with Black Candy 🍫
