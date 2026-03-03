@@ -31,6 +31,7 @@ interface DownloadStore {
   removeDownload: (id: string) => void;
   clearCompleted: () => void;
   loadDownloads: () => Promise<void>;
+  syncDownloadProgress: (progress: any) => void;
 }
 
 export const useDownloadStore = create<DownloadStore>()(
@@ -39,9 +40,14 @@ export const useDownloadStore = create<DownloadStore>()(
       downloads: [],
 
       addDownload: (download) => {
-        set((state) => ({
-          downloads: [...state.downloads, download],
-        }));
+        set((state) => {
+          if (state.downloads.find((d) => d.id === download.id)) {
+            return state;
+          }
+          return {
+            downloads: [...state.downloads, download],
+          };
+        });
       },
 
       updateDownload: (id, updates) => {
@@ -67,6 +73,48 @@ export const useDownloadStore = create<DownloadStore>()(
               d.status !== "failed",
           ),
         }));
+      },
+
+      syncDownloadProgress: (progress) => {
+        set((state) => {
+          const index = state.downloads.findIndex((d) => d.id === progress.downloadId);
+          const taskData = {
+            id: progress.downloadId,
+            status: progress.status,
+            progress: progress.progress,
+            speed: progress.speed,
+            downloadedBytes: progress.downloadedBytes,
+            totalBytes: progress.totalBytes,
+            eta: progress.eta,
+            downloadedSegments: progress.downloadedSegments,
+            totalSegments: progress.totalSegments,
+            outputPath: progress.outputPath,
+            errorMessage: progress.errorMessage,
+          };
+
+          if (index === -1) {
+            // Add if it's an active/pending task, OR if it's a finished task we haven't seen yet
+            return {
+              downloads: [
+                ...state.downloads,
+                {
+                  ...taskData,
+                  options: {},
+                  filename:
+                    progress.title ||
+                    "Download " +
+                      progress.downloadId.substring(progress.downloadId.length - 4),
+                  url: progress.url || "Auto-detected stream",
+                },
+              ],
+            };
+          }
+
+          // Update existing
+          const newDownloads = [...state.downloads];
+          newDownloads[index] = { ...newDownloads[index], ...taskData };
+          return { downloads: newDownloads };
+        });
       },
 
       loadDownloads: async () => {

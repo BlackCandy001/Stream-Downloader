@@ -419,5 +419,3 @@ const Downloads: React.FC = () => {
 };
 
 export default Downloads;
-
-console.log("Downloads.tsx explicitly loaded - V3");

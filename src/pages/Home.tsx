@@ -282,37 +282,37 @@ const Home: React.FC = () => {
         </Space>
       </UrlInputCard>
 
-      {streams.length > 0 && (
-        <div style={{ marginTop: 48 }}>
-          <StreamSelector
-            streams={streams}
-            onSelectionChange={setSelectedStreams}
-          />
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          savePath: settings.defaultSaveFolder,
+          threadCount: settings.defaultThreadCount || 8,
+        }}
+      >
+        {streams.length > 0 && (
+          <div style={{ marginTop: 48 }}>
+            <StreamSelector
+              streams={streams}
+              onSelectionChange={setSelectedStreams}
+            />
 
-          <ConfigCard
-            title={
-              <Space>
-                <SettingOutlined style={{ color: "var(--primary)" }} />
-                <span>{t("home.downloadConfig")}</span>
-              </Space>
-            }
-            extra={
-              <Button
-                type="link"
-                onClick={() => setShowConfig(!showConfig)}
-                style={{ color: "var(--primary)" }}
-              >
-                {showConfig ? t("common.close") : t("home.advancedOptions")}
-              </Button>
-            }
-          >
-            <Form
-              form={form}
-              layout="vertical"
-              initialValues={{
-                savePath: settings.defaultSaveFolder,
-                threadCount: settings.defaultThreadCount || 8,
-              }}
+            <ConfigCard
+              title={
+                <Space>
+                  <SettingOutlined style={{ color: "var(--primary)" }} />
+                  <span>{t("home.downloadConfig")}</span>
+                </Space>
+              }
+              extra={
+                <Button
+                  type="link"
+                  onClick={() => setShowConfig(!showConfig)}
+                  style={{ color: "var(--primary)" }}
+                >
+                  {showConfig ? t("common.close") : t("home.advancedOptions")}
+                </Button>
+              }
             >
               <Form.Item
                 label={
@@ -320,15 +320,15 @@ const Home: React.FC = () => {
                     {t("home.saveLocation")}
                   </span>
                 }
-                >
-                  <Space.Compact style={{ width: "100%" }}>
-                    <Form.Item name="savePath" noStyle>
-                      <Input
-                        placeholder={t("home.saveLocation")}
-                        style={{ flex: 1 }}
-                      />
-                    </Form.Item>
-                    <Button
+              >
+                <Space.Compact style={{ width: "100%" }}>
+                  <Form.Item name="savePath" noStyle>
+                    <Input
+                      placeholder={t("home.saveLocation")}
+                      style={{ flex: 1 }}
+                    />
+                  </Form.Item>
+                  <Button
                     icon={<FolderOpenOutlined />}
                     onClick={async (e) => {
                       e.preventDefault();
@@ -412,28 +412,28 @@ const Home: React.FC = () => {
                   <Switch checkedChildren="ON" unCheckedChildren="OFF" />
                 </Form.Item>
               </div>
-            </Form>
 
-            <Button
-              type="primary"
-              size="large"
-              icon={<DownloadOutlined />}
-              onClick={handleDownload}
-              disabled={selectedStreams.length === 0}
-              block
-              style={{
-                height: "56px",
-                borderRadius: "16px",
-                fontSize: "18px",
-                fontWeight: 700,
-                marginTop: 16,
-              }}
-            >
-              {t("home.downloadButton")}
-            </Button>
-          </ConfigCard>
-        </div>
-      )}
+              <Button
+                type="primary"
+                size="large"
+                icon={<DownloadOutlined />}
+                onClick={handleDownload}
+                disabled={selectedStreams.length === 0}
+                block
+                style={{
+                  height: "56px",
+                  borderRadius: "16px",
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  marginTop: 16,
+                }}
+              >
+                {t("home.downloadButton")}
+              </Button>
+            </ConfigCard>
+          </div>
+        )}
+      </Form>
     </HomeContainer>
   );
 };

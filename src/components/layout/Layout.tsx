@@ -10,9 +10,12 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LinkOutlined,
+  FullscreenOutlined,
 } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components";
+import { useDownloadStore } from "../../store/downloadStore";
+import TitleBar from "./TitleBar";
 
 const { Header, Sider, Content } = AntLayout;
 
@@ -128,13 +131,38 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [location]);
 
   useEffect(() => {
+    // Initial sync
+    useDownloadStore.getState().loadDownloads();
+
     const unsubscribe = window.electronAPI.onAppMessage((data) => {
       if (data && data.type === "info" && data.content === "instantDownloadAutoStarted") {
         message.success(t("messages.downloadStarted") || "Instant Download auto-started!");
+      } else if (data && data.type === "error" && data.content === "autoDownloadFailed") {
+        message.error(`${t("messages.downloadFailed") || "Auto-download failed"}: ${data.data || ""}`);
       }
     });
-    return () => unsubscribe();
-  }, [message, t]);
+    
+    const unsubscribeNavigate = window.electronAPI.onAppNavigate((url) => {
+      navigate(url);
+    });
+
+    // Global download progress listener to ensure auto-downloads are tracked
+    const unsubscribeProgress = window.electronAPI.onDownloadProgress((progress) => {
+      console.log("[Layout] Progress received:", progress.downloadId, progress.status, progress.progress + "%");
+      useDownloadStore.getState().syncDownloadProgress(progress);
+
+      // Sync to System Tray
+      if (progress.status === "downloading") {
+        window.electronAPI.downloadProgressSync(progress);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeNavigate();
+      unsubscribeProgress();
+    };
+  }, [message, t, navigate]);
 
   const menuItems = [
     {
@@ -173,8 +201,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     navigate(key === "home" ? "/" : `/${key}`);
   };
 
+  if (location.pathname === "/minimal") {
+    return <div className="minimal-layout">{children}</div>;
+  }
+
   return (
     <StyledLayout>
+      <TitleBar isMinimal={location.pathname === "/minimal"} />
+      <AntLayout style={{ background: "transparent" }}>
       <StyledSider trigger={null} collapsible collapsed={collapsed} width={240}>
         <Logo $collapsed={collapsed}>
           <span className="logo-icon">📥</span>
@@ -203,6 +237,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </HeaderTitle>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
+            <Tooltip title="Minimal Mode">
+              <Button
+                type="text"
+                shape="circle"
+                icon={<FullscreenOutlined />}
+                onClick={() => window.electronAPI.appSetMinimalMode(true)}
+                style={{ color: "var(--text-muted)" }}
+              />
+            </Tooltip>
             <Tooltip title={t("common.minimize")}>
               <Button
                 type="text"
@@ -217,7 +260,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <Button
                 type="text"
                 shape="circle"
-                onClick={() => window.electronAPI.appMaximize()}
+                onClick={() => window.electronAPI.appToggleMaximize()}
                 style={{ color: "var(--text-muted)" }}
               >
                 □
@@ -228,7 +271,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 type="text"
                 shape="circle"
                 danger
-                onClick={() => window.electronAPI.appQuit()}
+                onClick={() => window.electronAPI.appCloseWindow()}
               >
                 ×
               </Button>
@@ -236,6 +279,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </StyledHeader>
         <StyledContent>{children}</StyledContent>
+      </AntLayout>
       </AntLayout>
     </StyledLayout>
   );

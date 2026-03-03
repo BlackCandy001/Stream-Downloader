@@ -11,6 +11,7 @@ export interface StreamData {
   title?: string;
   source?: string;
   timestamp: number;
+  autoDownload?: boolean;
 }
 
 export interface ApiResponse {
@@ -103,6 +104,11 @@ export class LocalServer {
 
         if (data.action === "add_stream") {
           const stream: StreamData = data.data;
+
+          // Merge top-level autoDownload if present
+          if (data.autoDownload !== undefined) {
+            stream.autoDownload = data.autoDownload;
+          }
 
           // Check duplicate
           const exists = this.streams.some((s) => s.url === stream.url);

@@ -19,17 +19,23 @@ export interface DownloadProgress {
   currentSegment?: number;
   outputPath?: string;
   errorMessage?: string;
+  title?: string;
+  url?: string;
 }
 
 export interface ElectronAPI {
   // App Control
   appQuit: () => Promise<void>;
   appMinimize: () => Promise<void>;
-  appMaximize: () => Promise<void>;
+  appToggleMaximize: () => Promise<void>;
+  appCloseWindow: () => Promise<void>;
+  appIsMaximized: () => Promise<boolean>;
   appGetVersion: () => Promise<string>;
   appGetPlatform: () => Promise<"win" | "mac" | "linux">;
   appResetData: () => Promise<{ success: boolean }>;
   appOpenExternal: (url: string) => Promise<{ success: boolean }>;
+  appSetMinimalMode: (minimal: boolean) => Promise<void>;
+  appShowContextMenu: () => Promise<void>;
 
   // Stream Parsing
   streamParse: (url: string, options: any) => Promise<any>;
@@ -90,6 +96,8 @@ export interface ElectronAPI {
   onSettingsChanged: (callback: (data: any) => void) => () => void;
   onExtensionStreamDetected: (callback: (data: any) => void) => () => void;
   onAppMessage: (callback: (data: any) => void) => () => void;
+  onAppNavigate: (callback: (url: string) => void) => () => void;
+  downloadProgressSync: (data: any) => void;
   removeAllListeners: (channel: string) => void;
 }
 

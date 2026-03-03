@@ -189,6 +189,7 @@
     "parseSuccess": "Phân tích stream thành công",
     "parseError": "Không thể phân tích stream",
     "instantDownloadAutoStarted": "Đã tự động bắt đầu tải luồng phát hiện được",
+    "streamReceivedAutoDownloadSkipped": "Đã phát hiện luồng nhưng tính năng tải xuống tự động đang tắt. Bạn có thể bật trong Cài đặt hoặc Tiện ích mở rộng.",
     "downloadStarted": "Đã bắt đầu tải xuống",
     "downloadPaused": "Đã tạm dừng tải xuống",
     "downloadResumed": "Đã tiếp tục tải xuống",

@@ -2,10 +2,11 @@ import { spawn, ChildProcess } from "child_process";
 import { BrowserWindow, app } from "electron";
 import path from "path";
 import fs from "fs/promises";
-import { existsSync } from "fs";
+import { existsSync, createWriteStream } from "fs";
 import { fileURLToPath } from "url";
 import { shell } from "electron";
 import { SettingsService } from "./SettingsService.js";
+import { HistoryService } from "./HistoryService.js";
 import { DownloaderCore } from "../core/index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -30,17 +31,21 @@ export interface DownloadTask {
   process?: ChildProcess;
   outputLines: string[];
   outputPath?: string;
+  startTime: number;
+  errorMessage?: string;
 }
 
 export class DownloaderService {
   private downloads: Map<string, DownloadTask> = new Map();
   private settingsService: SettingsService;
+  private historyService: HistoryService;
   private backendPath: string;
   private mainWindow: BrowserWindow | null = null;
   private downloaderCore: DownloaderCore;
 
-  constructor(settingsService: SettingsService) {
+  constructor(settingsService: SettingsService, historyService: HistoryService) {
     this.settingsService = settingsService;
+    this.historyService = historyService;
 
     // Determine backend path based on platform
     const platform = process.platform;
@@ -57,6 +62,30 @@ export class DownloaderService {
 
   setMainWindow(window: BrowserWindow | null) {
     this.mainWindow = window;
+  }
+ 
+  private async recordHistory(task: DownloadTask) {
+    try {
+      const duration = Math.floor((Date.now() - task.startTime) / 1000);
+      await this.historyService.addHistory({
+        url: task.options.url,
+        filename: task.options.title || "Unknown",
+        savePath: task.outputPath || task.options.savePath || "",
+        streamInfo: {
+          type: task.options.type || "Unknown",
+          quality: task.options.quality || "Unknown",
+          language: task.options.language || "Unknown",
+        },
+        fileSize: task.downloadedBytes,
+        status: task.status as "completed" | "failed" | "cancelled",
+        createdAt: new Date(task.startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+        duration,
+        errorMessage: task.errorMessage
+      });
+    } catch (err) {
+      console.error("[DownloaderService] Failed to record history:", err);
+    }
   }
 
   private getBackendExecutable(platform: string): string {
@@ -239,6 +268,7 @@ export class DownloaderService {
       totalSegments: 100,
       options,
       outputLines: [],
+      startTime: Date.now(),
     };
 
     this.downloads.set(downloadId, task);
@@ -270,13 +300,15 @@ export class DownloaderService {
           
           let formatOptions: any = { 
             quality: "highest", 
-            filter: "audioandvideo", // Ensure combined stream for audio
-            highWaterMark: 1 << 20, // Reduced buffer to 1MB to avoid early throttling
+            filter: (format: any) => format.hasVideo && format.hasAudio, // More reliable than 'audioandvideo' string
+            highWaterMark: 1 << 25, // Increase buffer to 32MB for smoother download
             requestOptions: {
               headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
                 "Accept": "*/*",
                 "Accept-Language": "en-US,en;q=0.9",
+                "Origin": "https://www.youtube.com",
+                "Referer": "https://www.youtube.com/",
               }
             }
           };
@@ -326,15 +358,17 @@ export class DownloaderService {
             writable: true
           });
 
-          const fileStream = fs.createWriteStream(safeOutputPath);
+          const fileStream = createWriteStream(safeOutputPath);
           stream.pipe(fileStream);
 
           stream.on("end", () => {
             task.status = "completed";
             task.progress = 100;
+            task.outputPath = safeOutputPath;
             if (settings.openFolderWhenComplete && task.outputPath) {
               shell.showItemInFolder(task.outputPath);
             }
+            this.recordHistory(task);
             this.broadcastProgress(task);
             this.downloads.delete(downloadId);
           });
@@ -343,6 +377,8 @@ export class DownloaderService {
             console.error(`[DownloaderService] YouTube Download ${downloadId} failed:`, err.message);
             task.status = "failed";
             task.outputLines.push(`YouTube download error: ${err.message}`);
+            task.errorMessage = err.message;
+            this.recordHistory(task);
             this.broadcastProgress(task);
             this.downloads.delete(downloadId);
           });
@@ -350,8 +386,10 @@ export class DownloaderService {
           console.error(`[DownloaderService] YouTube Setup Download ${downloadId} failed:`, err.message);
           task.status = "failed";
           task.outputLines.push(`YouTube setup error: ${err.message}`);
+          task.errorMessage = err.message;
+          this.recordHistory(task);
           this.broadcastProgress(task);
-          this.downloads.delete(downloadId);
+          // this.downloads.delete(downloadId);
         }
       })();
 
@@ -404,15 +442,18 @@ export class DownloaderService {
         .then(() => {
           task.status = "completed";
           task.progress = 100;
+          task.outputPath = safeOutputPath;
 
           // Auto-open folder if enabled
           if (settings.openFolderWhenComplete && task.outputPath) {
             shell.showItemInFolder(task.outputPath);
           }
 
+          this.recordHistory(task);
           this.broadcastProgress(task);
           this.downloaderCore.off("progress", onProgress);
-          this.downloads.delete(downloadId);
+          // Keep in memory for UI sync until explicitly removed or app restart
+          // this.downloads.delete(downloadId);
         })
         .catch((err) => {
           console.error(
@@ -421,9 +462,12 @@ export class DownloaderService {
           );
           task.status = "failed";
           task.outputLines.push(`Download error: ${err.message}`);
+          task.errorMessage = err.message;
+          this.recordHistory(task);
           this.broadcastProgress(task);
           this.downloaderCore.off("progress", onProgress);
-          this.downloads.delete(downloadId);
+          // Keep in memory for UI sync until explicitly removed or app restart
+          // this.downloads.delete(downloadId);
         });
 
       task.status = "downloading";
@@ -476,22 +520,21 @@ export class DownloaderService {
           }
         } else {
           task.status = "failed";
+          task.errorMessage = `Exit code ${code}`;
         }
+        this.recordHistory(task);
         this.broadcastProgress(task);
-        this.downloads.delete(downloadId);
-      });
-
-      childProcess.on("error", (error) => {
-        task.status = "failed";
-        task.outputLines.push(`Process error: ${error.message}`);
-        this.broadcastProgress(task);
-        this.downloads.delete(downloadId);
+        // Keep in memory for UI sync
+        // this.downloads.delete(downloadId);
       });
     } catch (error: any) {
       task.status = "failed";
       task.outputLines.push(`Spawn error: ${error.message}`);
+      task.errorMessage = error.message;
+      this.recordHistory(task);
       this.broadcastProgress(task);
-      this.downloads.delete(downloadId);
+      // Keep in memory for UI sync
+      // this.downloads.delete(downloadId);
       throw error;
     }
 
@@ -714,6 +757,7 @@ export class DownloaderService {
 
   private broadcastProgress(task: DownloadTask): void {
     if (this.mainWindow) {
+      console.log(`[DownloaderService] Broadcasting progress for ${task.id}: ${task.progress}% status=${task.status}`);
       this.mainWindow.webContents.send("download:progress", {
         downloadId: task.id,
         status: task.status,
@@ -725,6 +769,8 @@ export class DownloaderService {
         downloadedSegments: task.downloadedSegments,
         totalSegments: task.totalSegments,
         outputPath: task.outputPath,
+        title: task.options.title,
+        url: task.options.url,
         // Include last error line so UI can display it
         errorMessage:
           task.status === "failed" && task.outputLines.length > 0
@@ -764,7 +810,8 @@ export class DownloaderService {
       task.process.kill();
       task.status = "cancelled";
       this.broadcastProgress(task);
-      this.downloads.delete(downloadId);
+      // Keep in memory for UI sync until explicitly removed
+      // this.downloads.delete(downloadId);
     }
   }
 
@@ -794,8 +841,13 @@ export class DownloaderService {
     this.downloads.delete(downloadId);
   }
 
-  getAllDownloads(): DownloadTask[] {
-    return Array.from(this.downloads.values());
+  getAllDownloads(): any[] {
+    const tasks = Array.from(this.downloads.values()).map(task => {
+      const { process, outputLines, ...sanitized } = task;
+      return sanitized;
+    });
+    console.log(`[DownloaderService] Returning ${tasks.length} sanitized tasks from map.`, tasks.map(t => t.id));
+    return tasks;
   }
 
   getDownloadProgress(downloadId: string): DownloadTask | undefined {

@@ -49,11 +49,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // App Control
   appQuit: () => ipcRenderer.invoke("app:quit"),
   appMinimize: () => ipcRenderer.invoke("app:minimize"),
-  appMaximize: () => ipcRenderer.invoke("app:maximize"),
+  appToggleMaximize: () => ipcRenderer.invoke("app:toggleMaximize"),
+  appCloseWindow: () => ipcRenderer.invoke("app:closeWindow"),
+  appIsMaximized: () => ipcRenderer.invoke("app:isMaximized"),
   appGetVersion: () => ipcRenderer.invoke("app:getVersion"),
   appGetPlatform: () => ipcRenderer.invoke("app:getPlatform"),
   appResetData: () => ipcRenderer.invoke("app:resetData"),
   appOpenExternal: (url: string) => ipcRenderer.invoke("app:openExternal", url),
+  appSetMinimalMode: (minimal: boolean) => ipcRenderer.invoke("app:setMinimalMode", minimal),
+  appShowContextMenu: () => ipcRenderer.invoke("app:showContextMenu"),
+  downloadProgressSync: (data: any) => ipcRenderer.send("download:progress-sync", data),
 
   // Stream Parsing
   streamParse: (url: string, options: any) =>
@@ -156,6 +161,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("app:message", subscription);
     return () => ipcRenderer.removeListener("app:message", subscription);
   },
+  onAppNavigate: (callback: (url: string) => void) => {
+    const subscription = (_event: IpcRendererEvent, url: string) =>
+      callback(url);
+    ipcRenderer.on("app:navigate", subscription);
+    return () => ipcRenderer.removeListener("app:navigate", subscription);
+  },
 
   // Remove all listeners
   removeAllListeners: (channel: string) => {
@@ -175,6 +186,8 @@ declare global {
       appGetPlatform: () => Promise<"win" | "mac" | "linux">;
       appResetData: () => Promise<{ success: boolean }>;
       appOpenExternal: (url: string) => Promise<{ success: boolean }>;
+      appSetMinimalMode: (minimal: boolean) => Promise<void>;
+      appShowContextMenu: () => Promise<void>;
 
       // Stream Parsing
       streamParse: (url: string, options: any) => Promise<any>;
@@ -240,6 +253,7 @@ declare global {
       onExtensionStreamDetected: (callback: (data: any) => void) => () => void;
       onSettingsChanged: (callback: (data: Settings) => void) => () => void;
       onAppMessage: (callback: (data: any) => void) => () => void;
+      onAppNavigate: (callback: (url: string) => void) => () => void;
       removeAllListeners: (channel: string) => void;
     };
   }

@@ -81,36 +81,7 @@ export function useDownloader() {
             url: options.url,
           });
 
-          // Setup progress listener
-          const unsubscribe = window.electronAPI.onDownloadProgress(
-            (progress) => {
-              if (progress.downloadId === result.downloadId) {
-                updateDownload(progress.downloadId, {
-                  progress: progress.progress,
-                  speed: progress.speed,
-                  downloadedBytes: progress.downloadedBytes,
-                  totalBytes: progress.totalBytes,
-                  eta: progress.eta,
-                  downloadedSegments: progress.downloadedSegments,
-                  totalSegments: progress.totalSegments,
-                  status: progress.status,
-                  outputPath: progress.outputPath,
-                  // Forward error message when failed
-                  ...(progress.status === "failed" && progress.errorMessage
-                    ? { errorMessage: progress.errorMessage }
-                    : {}),
-                });
 
-                if (
-                  progress.status === "completed" ||
-                  progress.status === "failed" ||
-                  progress.status === "cancelled"
-                ) {
-                  unsubscribe();
-                }
-              }
-            },
-          );
         }
 
         return result;

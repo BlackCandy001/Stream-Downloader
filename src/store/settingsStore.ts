@@ -19,9 +19,10 @@ export interface Settings {
   requestTimeout: number
   retryCount: number
   enableClipboardMonitor: boolean
-  logLevel: string
-  historyRetentionDays: number
-  autoCleanHistory: boolean
+  enableInstantDownload: boolean;
+  logLevel: string;
+  historyRetentionDays: number;
+  autoCleanHistory: boolean;
 }
 
 const defaultSettings: Settings = {
@@ -42,6 +43,7 @@ const defaultSettings: Settings = {
   requestTimeout: 30,
   retryCount: 3,
   enableClipboardMonitor: false,
+  enableInstantDownload: false,
   logLevel: 'info',
   historyRetentionDays: 30,
   autoCleanHistory: false,

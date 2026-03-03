@@ -8,8 +8,12 @@ import History from "./pages/History";
 import Settings from "./pages/Settings";
 import About from "./pages/About";
 import Extension from "./pages/Extension";
+import MinimalMode from "./pages/MinimalMode";
 import { useSettingsStore } from "./store/settingsStore";
-import "./i18n/config";
+import i18n from "./i18n/config";
+import en_US from "antd/locale/en_US";
+import vi_VN from "antd/locale/vi_VN";
+import zh_CN from "antd/locale/zh_CN";
 
 function App() {
   const { settings, loadSettings } = useSettingsStore();
@@ -18,6 +22,24 @@ function App() {
   useEffect(() => {
     loadSettings();
   }, []);
+
+  // Sync i18next language with settings
+  useEffect(() => {
+    if (settings.language) {
+      i18n.changeLanguage(settings.language);
+    }
+  }, [settings.language]);
+
+  const getAntdLocale = () => {
+    switch (settings.language) {
+      case "vi":
+        return vi_VN;
+      case "zh":
+        return zh_CN;
+      default:
+        return en_US;
+    }
+  };
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -61,9 +83,9 @@ function App() {
   };
 
   return (
-    <ConfigProvider theme={antdTheme}>
+    <ConfigProvider theme={antdTheme} locale={getAntdLocale()}>
       <AntdApp>
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Layout>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -72,6 +94,7 @@ function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/about" element={<About />} />
               <Route path="/extension" element={<Extension />} />
+              <Route path="/minimal" element={<MinimalMode />} />
             </Routes>
           </Layout>
         </Router>

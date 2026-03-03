@@ -31,9 +31,30 @@ let downloaderService: DownloaderService | null = null;
 let settingsService: SettingsService | null = null;
 let historyService: HistoryService | null = null;
 let localServer: LocalServer | null = null;
+let isMinimalMode = false;
 
 // Disable GPU hardware acceleration if needed
 // app.disableHardwareAcceleration()
+
+function setMinimalMode(minimal: boolean) {
+  if (!mainWindow) return;
+  isMinimalMode = minimal;
+
+  if (minimal) {
+    mainWindow.setAlwaysOnTop(true);
+    mainWindow.setResizable(false);
+    mainWindow.setMinimumSize(350, 60);
+    mainWindow.setSize(350, 60);
+    mainWindow.webContents.send("app:navigate", "/minimal");
+  } else {
+    mainWindow.setAlwaysOnTop(false);
+    mainWindow.setResizable(true);
+    mainWindow.setMinimumSize(1000, 700);
+    mainWindow.setSize(1400, 900);
+    mainWindow.center();
+    mainWindow.webContents.send("app:navigate", "/");
+  }
+}
 
 function getIconPath(): string | undefined {
   const iconPath = path.join(__dirname, "../resources/icon.png");
@@ -53,8 +74,10 @@ function createWindow() {
       nodeIntegration: false,
     },
     ...(iconPath ? { icon: iconPath } : {}),
-    titleBarStyle: "default",
-    frame: true,
+    titleBarStyle: "hidden",
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
   });
 
   // Load the app
@@ -64,6 +87,19 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
   }
+
+  mainWindow.on("close", (event) => {
+    if (!(app as any).isQuiting) {
+      event.preventDefault();
+      if (!isMinimalMode) {
+        setMinimalMode(true);
+      } else {
+        mainWindow?.hide();
+      }
+      return false;
+    }
+    return true;
+  });
 
   mainWindow.on("closed", () => {
     mainWindow = null;
@@ -76,6 +112,52 @@ function createWindow() {
   });
 }
 
+function updateTrayMenu(progressInfo?: string) {
+  if (!tray) return;
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: progressInfo || "No active downloads",
+      enabled: false,
+    },
+    { type: "separator" },
+    {
+      label: isMinimalMode ? "Restore Main UI" : "Switch to Minimal Mode",
+      click: () => {
+        setMinimalMode(!isMinimalMode);
+        mainWindow?.show();
+        mainWindow?.focus();
+      },
+    },
+    {
+      label: mainWindow?.isVisible() ? "Hide to Tray" : "Show Window",
+      click: () => {
+        if (mainWindow?.isVisible()) {
+          mainWindow.hide();
+        } else {
+          mainWindow?.show();
+          mainWindow?.focus();
+        }
+      },
+    },
+    { type: "separator" },
+    {
+      label: "Quit",
+      click: () => {
+        (app as any).isQuiting = true;
+        app.quit();
+      },
+    },
+  ]);
+
+  tray.setContextMenu(contextMenu);
+  if (progressInfo) {
+    tray.setToolTip(`Stream Downloader: ${progressInfo}`);
+  } else {
+    tray.setToolTip("Stream Downloader");
+  }
+}
+
 function createTray() {
   const iconPath = getIconPath();
   if (!iconPath) {
@@ -84,25 +166,15 @@ function createTray() {
   }
   try {
     tray = new Tray(iconPath);
-
-    const contextMenu = Menu.buildFromTemplate([
-      {
-        label: "Show",
-        click: () => {
-          mainWindow?.show();
-        },
-      },
-      {
-        label: "Quit",
-        click: () => {
-          (app as any).isQuiting = true;
-          app.quit();
-        },
-      },
-    ]);
-
     tray.setToolTip("Stream Downloader");
-    tray.setContextMenu(contextMenu);
+    updateTrayMenu();
+    
+    tray.on('double-click', () => {
+      if (isMinimalMode) {
+        setMinimalMode(false);
+      }
+      mainWindow?.show();
+    });
   } catch (err: any) {
     console.warn("[Main] Failed to create tray:", err.message);
   }
@@ -111,6 +183,12 @@ function createTray() {
 // IPC Handlers
 function setupIpcHandlers() {
   // ============= APP CONTROL =============
+  ipcMain.on("download:progress-sync", (_, data: any) => {
+    if (data && data.progress !== undefined) {
+      updateTrayMenu(`${Math.round(data.progress)}% - ${data.status}`);
+    }
+  });
+
   ipcMain.handle("app:quit", () => {
     (app as any).isQuiting = true;
     app.quit();
@@ -120,12 +198,20 @@ function setupIpcHandlers() {
     mainWindow?.minimize();
   });
 
-  ipcMain.handle("app:maximize", () => {
+  ipcMain.handle("app:toggleMaximize", () => {
     if (mainWindow?.isMaximized()) {
       mainWindow.unmaximize();
     } else {
       mainWindow?.maximize();
     }
+  });
+
+  ipcMain.handle("app:isMaximized", () => {
+    return mainWindow?.isMaximized() || false;
+  });
+
+  ipcMain.handle("app:closeWindow", () => {
+    mainWindow?.close();
   });
 
   ipcMain.handle("app:getVersion", () => {
@@ -139,6 +225,35 @@ function setupIpcHandlers() {
   ipcMain.handle("app:openExternal", async (_, url: string) => {
     await shell.openExternal(url);
     return { success: true };
+  });
+
+  ipcMain.handle("app:setMinimalMode", async (_, minimal: boolean) => {
+    setMinimalMode(minimal);
+    updateTrayMenu();
+  });
+
+  ipcMain.handle("app:showContextMenu", () => {
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: isMinimalMode ? "Restore Main UI" : "Show Window",
+        click: () => {
+          if (isMinimalMode) {
+            setMinimalMode(false);
+          }
+          mainWindow?.show();
+          mainWindow?.focus();
+        },
+      },
+      { type: "separator" },
+      {
+        label: "Exit",
+        click: () => {
+          (app as any).isQuiting = true;
+          app.quit();
+        },
+      },
+    ]);
+    contextMenu.popup();
   });
 
   // ============= STREAM PARSING =============
@@ -155,6 +270,7 @@ function setupIpcHandlers() {
   ipcMain.handle("download:start", async (_, options: any) => {
     try {
       const downloadId = await downloaderService?.startDownload(options);
+      console.log("[Main] Download started with ID:", downloadId);
       return { success: true, downloadId };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -201,7 +317,9 @@ function setupIpcHandlers() {
   );
 
   ipcMain.handle("download:getAll", async () => {
-    return downloaderService?.getAllDownloads() || [];
+    const downloads = downloaderService?.getAllDownloads() || [];
+    console.log("[Main] download:getAll called, returning", downloads.length, "tasks");
+    return downloads;
   });
 
   ipcMain.handle("download:getProgress", async (_, downloadId: string) => {
@@ -353,7 +471,7 @@ app.whenReady().then(async () => {
   // Initialize services
   settingsService = new SettingsService();
   historyService = new HistoryService();
-  downloaderService = new DownloaderService(settingsService);
+  downloaderService = new DownloaderService(settingsService, historyService);
 
   // Set window for broadcasting
   downloaderService.setMainWindow(mainWindow);
@@ -379,19 +497,23 @@ app.whenReady().then(async () => {
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
+    } else {
+      mainWindow?.show();
     }
   });
 });
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
-    // Cleanup downloads
-    downloaderService?.cleanup();
-    app.quit();
+    if ((app as any).isQuiting) {
+      downloaderService?.cleanup();
+      app.quit();
+    }
   }
 });
 
 app.on("before-quit", () => {
+  (app as any).isQuiting = true;
   downloaderService?.cleanup();
   localServer?.stop();
 });
@@ -407,8 +529,19 @@ async function handleStreamFromExtension(stream: StreamData): Promise<void> {
 
   // Instant Download Logic
   const settings = await settingsService?.getSettings();
-  if (settings?.enableInstantDownload && downloaderService) {
-    console.log("[Main] Instant Download triggered for:", stream.url);
+  const shouldAutoDownload =
+    stream.autoDownload || settings?.enableInstantDownload;
+
+  console.log(
+    `[Main] Auto-download check: stream.autoDownload=${stream.autoDownload}, settings.enableInstantDownload=${settings?.enableInstantDownload} -> result=${shouldAutoDownload}`,
+  );
+
+  if (shouldAutoDownload && downloaderService) {
+    console.log(
+      "[Main] Auto Download triggered for:",
+      stream.url,
+      stream.autoDownload ? "(via extension)" : "(via app settings)",
+    );
     try {
       await downloaderService.startDownload({
         url: stream.url,
@@ -427,8 +560,25 @@ async function handleStreamFromExtension(stream: StreamData): Promise<void> {
         });
       }
     } catch (err: any) {
-      console.error("[Main] Instant Download failed:", err.message);
+      console.error("[Main] Auto Download failed:", err.message);
+      if (mainWindow) {
+        mainWindow.webContents.send("app:message", {
+          type: "error",
+          content: "autoDownloadFailed",
+          data: err.message,
+        });
+      }
     }
+  } else if (mainWindow) {
+    // Notify renderer that a stream was received but auto-download was skipped
+    mainWindow.webContents.send("app:message", {
+      type: "info",
+      content: "streamReceivedAutoDownloadSkipped",
+      data: {
+        streamAutoDownload: stream.autoDownload,
+        appAutoDownload: settings?.enableInstantDownload,
+      },
+    });
   }
 
   // Show notification

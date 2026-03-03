@@ -188,6 +188,7 @@
     "parseSuccess": "Stream parsed successfully",
     "parseError": "Failed to parse stream",
     "instantDownloadAutoStarted": "Instant Download auto-started for detected stream",
+    "streamReceivedAutoDownloadSkipped": "Stream detected but auto-download is disabled. You can enable it in Settings or Extension.",
     "downloadStarted": "Download started",
     "downloadPaused": "Download paused",
     "downloadResumed": "Download resumed",
