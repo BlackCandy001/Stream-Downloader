@@ -7,6 +7,7 @@ import {
   Tray,
   Menu,
   clipboard,
+  screen,
 } from "electron";
 import path from "path";
 import { existsSync } from "fs";
@@ -74,15 +75,33 @@ function setMinimalMode(minimal: boolean) {
 }
 
 function getWindowPosition() {
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+  const { x: workX, y: workY } = primaryDisplay.workArea;
+  
   const windowBounds = mainWindow!.getBounds();
   const trayBounds = tray!.getBounds();
 
-  // Center window horizontally with the tray icon
-  const x = Math.round(trayBounds.x + trayBounds.width / 2 - windowBounds.width / 2);
-
-  // Position window 4 pixels above the tray (for bottom taskbars)
-  // Or handle different OS layouts later if needed
-  const y = Math.round(trayBounds.y - windowBounds.height - 4);
+  // Horizontal: Center with tray
+  let x = Math.round(trayBounds.x + trayBounds.width / 2 - windowBounds.width / 2);
+  
+  // Vertical: 
+  let y;
+  // If tray is at the bottom (workY is usually 0 and trayBounds.y is near screenHeight)
+  if (trayBounds.y > screenHeight / 2) {
+    y = trayBounds.y - windowBounds.height - 4;
+  } else {
+    // Top
+    y = trayBounds.y + trayBounds.height + 4;
+  }
+  
+  // Ensure within screen bounds
+  if (x < workX) x = workX + 8;
+  if (x + windowBounds.width > workX + screenWidth) x = workX + screenWidth - windowBounds.width - 8;
+  
+  // Check if y is also within workArea
+  if (y < workY) y = workY + 8;
+  if (y + windowBounds.height > workY + screenHeight) y = workY + screenHeight - windowBounds.height - 8;
 
   return { x, y };
 }
@@ -98,27 +117,25 @@ function toggleWindow() {
 function showWindow() {
   const position = getWindowPosition();
   mainWindow?.setPosition(position.x, position.y, false);
+  if (isMinimalMode) {
+    mainWindow?.setAlwaysOnTop(true, "screen-saver");
+  }
   mainWindow?.show();
   mainWindow?.focus();
 }
 
 function getIconPath(): string | undefined {
-  // 1. Try dev path (relative to dist-electron or electron)
-  let iconPath = path.join(__dirname, "../resources/icon.png");
-  if (existsSync(iconPath)) return iconPath;
+  const paths = [
+    path.join(__dirname, "../resources/icon.png"),
+    path.join(__dirname, "../../resources/icon.png"),
+    path.join(app.getAppPath(), "resources/icon.png"),
+    path.join(process.resourcesPath, "resources/icon.png"),
+    path.join(process.resourcesPath, "icon.png"),
+  ];
 
-  // 2. Try production path (outside asar, in resources folder)
-  if (app.isPackaged) {
-    iconPath = path.join(process.resourcesPath, "resources/icon.png");
-    if (existsSync(iconPath)) return iconPath;
-    
-    iconPath = path.join(process.resourcesPath, "icon.png");
-    if (existsSync(iconPath)) return iconPath;
+  for (const p of paths) {
+    if (existsSync(p)) return p;
   }
-
-  // 3. Fallback to asar interior if necessary (though usually better kept outside)
-  iconPath = path.join(__dirname, "../../resources/icon.png");
-  if (existsSync(iconPath)) return iconPath;
 
   return undefined;
 }
@@ -575,6 +592,11 @@ app.whenReady().then(async () => {
   // Update service with new window
   if (mainWindow) {
     downloaderService?.setMainWindow(mainWindow);
+  }
+
+  // Set AppUserModelId for Windows
+  if (process.platform === "win32") {
+    app.setAppUserModelId("com.streamdownloader.app");
   }
 
   setupIpcHandlers();

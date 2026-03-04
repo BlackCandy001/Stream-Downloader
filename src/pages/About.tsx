@@ -114,7 +114,7 @@ const About: React.FC = () => {
       <StyledCard>
         <LogoGlow>📥</LogoGlow>
         <AppTitle>{t("app.title")}</AppTitle>
-        <VersionBadge>v{version || "1.0.0"}</VersionBadge>
+        <VersionBadge>v{version || "1.1.0"}</VersionBadge>
 
         <p
           style={{

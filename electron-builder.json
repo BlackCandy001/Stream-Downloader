@@ -9,6 +9,7 @@
   "files": [
     "dist/**/*",
     "dist-electron/**/*",
+    "resources/**/*",
     "package.json"
   ],
   "win": {

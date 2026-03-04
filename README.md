@@ -2,7 +2,7 @@
 
 **Stream Downloader** là ứng dụng desktop cao cấp, hiện đại được thiết kế để tải video stream hiệu suất cao (HLS/DASH/MSS). Được xây dựng với **Electron**, **React**, và **TypeScript**, ứng dụng mang đến giao diện không viền (frameless) mượt mà cùng khả năng tự động hóa mạnh mẽ thông qua tiện ích mở rộng đi kèm.
 
-![Version](https://img.shields.io/badge/phi\u00ean_b\u1ea3n-1.0.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/phi\u00ean_b\u1ea3n-1.1.0-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/gi\u1ea5y_ph\u00e9p-MIT-green?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Electron](https://img.shields.io/badge/Electron-2B2E3A?style=for-the-badge&logo=electron&logoColor=9FEAF9)

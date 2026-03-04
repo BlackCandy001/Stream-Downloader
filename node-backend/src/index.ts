@@ -11,7 +11,7 @@ const program = new Command();
 program
   .name("node-downloader")
   .description("Download HLS m3u8 streams")
-  .version("1.0.0")
+  .version("1.1.0")
   .argument("<url>", "m3u8 URL")
   .option("-o, --output <filename>", "output filename", "output.mp4")
   .option("-c, --concurrency <number>", "number of concurrent downloads", "8")

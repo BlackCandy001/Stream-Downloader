@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Stream Downloader Companion",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Thu thập và gửi URL m3u8/mpd đến Stream Downloader desktop app",
   "author": "Black Candy",
   "homepage_url": "https://github.com/nilaoda/N_m3u8DL-RE",

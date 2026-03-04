@@ -1,6 +1,6 @@
 {
   "name": "node-backend",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Node.js backend for m3u8 downloading inspired by N_m3u8DL-RE",
   "type": "module",
   "main": "src/index.ts",
