@@ -236,6 +236,10 @@ function updateTrayMenu(progressInfo?: string) {
       label: "Quit",
       click: () => {
         (app as any).isQuiting = true;
+        if (tray) {
+          tray.destroy();
+          tray = null;
+        }
         app.quit();
       },
     },
@@ -286,6 +290,10 @@ function setupIpcHandlers() {
 
   ipcMain.handle("app:quit", () => {
     (app as any).isQuiting = true;
+    if (tray) {
+      tray.destroy();
+      tray = null;
+    }
     app.quit();
   });
 
@@ -352,6 +360,10 @@ function setupIpcHandlers() {
         label: "Exit",
         click: () => {
           (app as any).isQuiting = true;
+          if (tray) {
+            tray.destroy();
+            tray = null;
+          }
           app.quit();
         },
       },
@@ -631,6 +643,13 @@ app.on("before-quit", (e) => {
       if (localServer) {
         await localServer.stop();
       }
+      
+      if (tray) {
+        console.log("[Main] Destroying Tray Icon...");
+        tray.destroy();
+        tray = null;
+      }
+      
       (app as any).isReallyQuitting = true;
       app.quit();
     })();

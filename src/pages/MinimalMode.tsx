@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import { Progress } from "antd";
 import { useDownloadStore } from "../store/downloadStore";
@@ -35,6 +35,14 @@ const InfoText = styled.div`
   user-select: none;
 `;
 
+const DetailText = styled.div`
+  font-size: 10px;
+  color: #8c8c8c;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+`;
+
 const Divider = styled.div`
   width: 100%;
   height: 1px;
@@ -42,20 +50,7 @@ const Divider = styled.div`
   margin: 10px 0;
 `;
 
-const ProgressSection = styled.div<{ $show: boolean }>`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  transition: all 0.3s ease;
-  opacity: ${props => props.$show ? 1 : 0};
-  max-height: ${props => props.$show ? '100px' : '0'};
-  overflow: hidden;
-  margin-top: ${props => props.$show ? '6px' : '0'};
-`;
-
 const MinimalMode: React.FC = () => {
-  const [streamCount, setStreamCount] = useState(0);
-  const [showProgress, setShowProgress] = useState(false);
   const downloads = useDownloadStore((state) => state.downloads);
   
   // Find the most relevant active download
@@ -67,45 +62,20 @@ const MinimalMode: React.FC = () => {
                                 .sort((a, b) => (b.id.split('-')[1] as any || 0) - (a.id.split('-')[1] as any || 0))[0];
 
   useEffect(() => {
-    // Poll stream count
-    const updateCount = async () => {
-      const count = await window.electronAPI.appGetStreamCount();
-      setStreamCount(count);
-    };
-    
-    updateCount();
-    const interval = setInterval(updateCount, 2000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
     console.log("[MinimalMode] Active:", activeDownload?.id, " lastFinished:", lastFinished?.id, " downloadsCount:", downloads.length);
   }, [activeDownload, lastFinished, downloads]);
-
-  useEffect(() => {
-    if (activeDownload) {
-      setShowProgress(true);
-    } else if (lastFinished) {
-      const finishTime = parseInt(lastFinished.id.split("-")[1] || "0");
-      const age = Date.now() - finishTime;
-      
-      // Show for 60 seconds after finish if it's recent
-      if (age < 60000) {
-        setShowProgress(true);
-        const remaining = 60000 - age;
-        const timer = setTimeout(() => setShowProgress(false), remaining);
-        return () => clearTimeout(timer);
-      } else {
-        setShowProgress(false);
-      }
-    } else {
-      setShowProgress(false);
-    }
-  }, [activeDownload, lastFinished]);
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     window.electronAPI.appShowContextMenu();
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
@@ -118,34 +88,30 @@ const MinimalMode: React.FC = () => {
 
       <Divider />
 
-      {/* 2. active Connections */}
+      {/* 2. Download Progress */}
       <Section>
-        <InfoText style={{ fontWeight: 400 }}>
-          Connections: <span style={{ fontWeight: 600, color: '#1890ff' }}>{streamCount}</span>
-        </InfoText>
-      </Section>
-
-      {/* 3. Download Progress */}
-      <ProgressSection $show={showProgress}>
-        <Divider />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <InfoText style={{ fontSize: '10px' }}>
-            {activeDownload ? 'Downloading...' : (lastFinished?.status === 'failed' ? 'Failed' : 'Completed')}
-          </InfoText>
-          <InfoText style={{ fontSize: '10px', color: (activeDownload || lastFinished?.status === 'completed') ? '#8c8c8c' : '#ff4d4f' }}>
-            {activeDownload ? `${Math.round(activeDownload.progress)}%` : (lastFinished?.status === 'failed' ? 'Error' : '100%')}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+          <InfoText style={{ fontWeight: 400 }}>
+            {activeDownload ? 'Downloading' : (lastFinished ? (lastFinished.status === 'failed' ? 'Failed' : 'Completed') : 'Ready')}
           </InfoText>
         </div>
         <Progress 
-          percent={activeDownload ? activeDownload.progress : (lastFinished ? lastFinished.progress : 0)} 
+          percent={Math.round(activeDownload ? activeDownload.progress : (lastFinished ? lastFinished.progress : 0))} 
           size="small"
-          showInfo={false}
+          showInfo={true}
           strokeColor={activeDownload ? "#1890ff" : (lastFinished?.status === 'failed' ? '#ff4d4f' : '#52c41a')}
           trailColor="#f5f5f5"
-          strokeWidth={2}
+          strokeWidth={4}
           status={activeDownload ? "active" : (lastFinished?.status === "failed" ? "exception" : "normal")}
+          format={(percent) => <span style={{ fontSize: '10px', color: '#8c8c8c', fontWeight: 500 }}>{percent}%</span>}
         />
-      </ProgressSection>
+        {activeDownload && (
+          <DetailText>
+            <span>{formatBytes(activeDownload.speed)}/s</span>
+            <span>{formatBytes(activeDownload.downloadedBytes)} / {activeDownload.totalBytes ? formatBytes(activeDownload.totalBytes) : 'Unknown'}</span>
+          </DetailText>
+        )}
+      </Section>
     </DropdownContainer>
   );
 };
