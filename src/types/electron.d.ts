@@ -35,15 +35,15 @@ export interface ElectronAPI {
   appResetData: () => Promise<{ success: boolean }>;
   appOpenExternal: (url: string) => Promise<{ success: boolean }>;
   appSetMinimalMode: (minimal: boolean) => Promise<void>;
+  appGetIsMinimalMode: () => Promise<boolean>;
   appShowContextMenu: () => Promise<void>;
+  appGetStreamCount: () => Promise<number>;
 
   // Stream Parsing
   streamParse: (url: string, options: any) => Promise<any>;
 
   // Download Control
-  downloadStart: (
-    options: any,
-  ) => Promise<{ success: boolean; downloadId?: string }>;
+  downloadStart: (options: any, ) => Promise<{ success: boolean; downloadId?: string }>;
   downloadPause: (downloadId: string) => Promise<{ success: boolean }>;
   downloadResume: (downloadId: string) => Promise<{ success: boolean }>;
   downloadCancel: (downloadId: string) => Promise<{ success: boolean }>;

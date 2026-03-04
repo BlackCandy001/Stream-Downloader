@@ -31,11 +31,11 @@
     --bg-color: #121212;
     --bg-secondary: #222222;
     --bg-tertiary: #333333;
-    
+
     --primary: #ffffff;
     --primary-hover: #e0e0e0;
     --accent: #4caf50;
-    
+
     --border-color: #444444;
     --text-main: #ffffff;
     --text-muted: #aaaaaa;
@@ -54,11 +54,11 @@ body:not(.light-theme) {
   --bg-color: #121212;
   --bg-secondary: #222222;
   --bg-tertiary: #333333;
-  
+
   --primary: #ffffff;
   --primary-hover: #e0e0e0;
   --accent: #4caf50;
-  
+
   --border-color: #444444;
   --text-main: #ffffff;
   --text-muted: #aaaaaa;
@@ -67,7 +67,7 @@ body:not(.light-theme) {
   --success: #4caf50;
   --warning: #ff9800;
   --error: #f44336;
-  
+
   color-scheme: dark;
 }
 
@@ -89,6 +89,10 @@ body {
   transition:
     background-color 0.3s,
     color 0.3s;
+}
+
+body.is-minimal {
+  background-color: transparent !important;
 }
 
 #root {

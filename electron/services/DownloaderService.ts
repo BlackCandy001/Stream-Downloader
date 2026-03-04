@@ -300,8 +300,15 @@ export class DownloaderService {
           
           let formatOptions: any = { 
             quality: "highest", 
-            filter: (format: any) => format.hasVideo && format.hasAudio, // More reliable than 'audioandvideo' string
-            highWaterMark: 1 << 25, // Increase buffer to 32MB for smoother download
+            // Try to get both video and audio, but fallback to any playable format if filter is too restrictive
+            filter: (format: any) => {
+              const combined = format.hasVideo && format.hasAudio;
+              // If it's a known playable format but not combined, we might still want it as a fallback
+              // but ytdl() with filter usually requires choosing one. 
+              // We'll use 'videoandaudio' as the primary preference.
+              return combined;
+            },
+            highWaterMark: 1 << 25,
             requestOptions: {
               headers: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -318,10 +325,18 @@ export class DownloaderService {
             const itagStr = options.selectedStreamIds[0];
             if (itagStr !== "highest" && !isNaN(Number(itagStr))) {
               formatOptions.quality = Number(itagStr);
+              delete formatOptions.filter; // If specific itag, don't use filter
             }
           }
 
-          const stream = ytdl(options.url, formatOptions);
+          // Robust check: if ytdl(url, options) fails due to filter, try without filter
+          let stream;
+          try {
+            stream = ytdl(options.url, formatOptions);
+          } catch (e) {
+            console.warn("[DownloaderService] Restricted filter failed, retrying with 'highest' default");
+            stream = ytdl(options.url, { ...formatOptions, filter: undefined });
+          }
           
           let lastTime = Date.now();
           let lastDownloadedBytes = 0;
@@ -370,7 +385,7 @@ export class DownloaderService {
             }
             this.recordHistory(task);
             this.broadcastProgress(task);
-            this.downloads.delete(downloadId);
+            // this.downloads.delete(downloadId);
           });
 
           stream.on("error", (err: any) => {
@@ -380,7 +395,7 @@ export class DownloaderService {
             task.errorMessage = err.message;
             this.recordHistory(task);
             this.broadcastProgress(task);
-            this.downloads.delete(downloadId);
+            // this.downloads.delete(downloadId);
           });
         } catch (err: any) {
           console.error(`[DownloaderService] YouTube Setup Download ${downloadId} failed:`, err.message);

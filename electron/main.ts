@@ -38,27 +38,89 @@ let isMinimalMode = false;
 
 function setMinimalMode(minimal: boolean) {
   if (!mainWindow) return;
-  isMinimalMode = minimal;
-
+  
+  // Rule: Minimal mode should not show up immediately when switching or closing
+  // It only shows when user clicks the tray icon AFTER it's set to minimal mode.
   if (minimal) {
+    // Hide first if switching from Dashboard
+    if (!isMinimalMode && mainWindow.isVisible()) {
+      mainWindow.hide();
+    }
+    
+    isMinimalMode = true;
     mainWindow.setAlwaysOnTop(true);
     mainWindow.setResizable(false);
-    mainWindow.setMinimumSize(350, 60);
-    mainWindow.setSize(350, 60);
+    mainWindow.setSkipTaskbar(true);
+    mainWindow.setMinimumSize(280, 100);
+    
+    // Prepare position and size for when it's eventually shown via tray click
+    mainWindow.setSize(280, 110);
+    const pos = getWindowPosition();
+    mainWindow.setPosition(pos.x, pos.y);
+    
     mainWindow.webContents.send("app:navigate", "/minimal");
   } else {
+    isMinimalMode = false;
     mainWindow.setAlwaysOnTop(false);
     mainWindow.setResizable(true);
+    mainWindow.setSkipTaskbar(false);
     mainWindow.setMinimumSize(1000, 700);
     mainWindow.setSize(1400, 900);
     mainWindow.center();
     mainWindow.webContents.send("app:navigate", "/");
+    mainWindow.show();
+    mainWindow.focus();
   }
 }
 
+function getWindowPosition() {
+  const windowBounds = mainWindow!.getBounds();
+  const trayBounds = tray!.getBounds();
+
+  // Center window horizontally with the tray icon
+  const x = Math.round(trayBounds.x + trayBounds.width / 2 - windowBounds.width / 2);
+
+  // Position window 4 pixels above the tray (for bottom taskbars)
+  // Or handle different OS layouts later if needed
+  const y = Math.round(trayBounds.y - windowBounds.height - 4);
+
+  return { x, y };
+}
+
+function toggleWindow() {
+  if (mainWindow?.isVisible()) {
+    mainWindow.hide();
+  } else {
+    showWindow();
+  }
+}
+
+function showWindow() {
+  const position = getWindowPosition();
+  mainWindow?.setPosition(position.x, position.y, false);
+  mainWindow?.show();
+  mainWindow?.focus();
+}
+
 function getIconPath(): string | undefined {
-  const iconPath = path.join(__dirname, "../resources/icon.png");
-  return existsSync(iconPath) ? iconPath : undefined;
+  // 1. Try dev path (relative to dist-electron or electron)
+  let iconPath = path.join(__dirname, "../resources/icon.png");
+  if (existsSync(iconPath)) return iconPath;
+
+  // 2. Try production path (outside asar, in resources folder)
+  if (app.isPackaged) {
+    iconPath = path.join(process.resourcesPath, "resources/icon.png");
+    if (existsSync(iconPath)) return iconPath;
+    
+    iconPath = path.join(process.resourcesPath, "icon.png");
+    if (existsSync(iconPath)) return iconPath;
+  }
+
+  // 3. Fallback to asar interior if necessary (though usually better kept outside)
+  iconPath = path.join(__dirname, "../../resources/icon.png");
+  if (existsSync(iconPath)) return iconPath;
+
+  return undefined;
 }
 
 function createWindow() {
@@ -68,47 +130,49 @@ function createWindow() {
     height: 900,
     minWidth: 1000,
     minHeight: 700,
+    show: true,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: false,
+    skipTaskbar: false,
+    resizable: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
     },
     ...(iconPath ? { icon: iconPath } : {}),
-    titleBarStyle: "hidden",
-    frame: false,
-    transparent: true,
     backgroundColor: "#00000000",
   });
 
-  // Load the app
+  // Start in Dashboard mode
+  isMinimalMode = false;
+
+  // Load the app root (Dashboard)
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
   }
 
+  mainWindow.on("blur", () => {
+    // Only auto-hide in minimal mode
+    if (isMinimalMode && !mainWindow?.webContents.isDevToolsOpened()) {
+      mainWindow?.hide();
+    }
+  });
+
   mainWindow.on("close", (event) => {
     if (!(app as any).isQuiting) {
       event.preventDefault();
+      // Switch to minimal mode on close
       if (!isMinimalMode) {
         setMinimalMode(true);
-      } else {
-        mainWindow?.hide();
       }
+      mainWindow?.hide();
       return false;
     }
     return true;
-  });
-
-  mainWindow.on("closed", () => {
-    mainWindow = null;
-  });
-
-  mainWindow.on("minimize", () => {
-    if (process.platform === "win32") {
-      mainWindow?.minimize();
-    }
   });
 }
 
@@ -122,11 +186,21 @@ function updateTrayMenu(progressInfo?: string) {
     },
     { type: "separator" },
     {
-      label: isMinimalMode ? "Restore Main UI" : "Switch to Minimal Mode",
+      label: "Open Dashboard",
       click: () => {
-        setMinimalMode(!isMinimalMode);
+        setMinimalMode(false);
         mainWindow?.show();
         mainWindow?.focus();
+      },
+    },
+    { type: "separator" },
+    {
+      label: isMinimalMode ? "Hide Popup" : "Switch to Minimal Mode",
+      click: () => {
+        if (!isMinimalMode) {
+          setMinimalMode(true);
+        }
+        toggleWindow();
       },
     },
     {
@@ -169,6 +243,10 @@ function createTray() {
     tray.setToolTip("Stream Downloader");
     updateTrayMenu();
     
+    tray.on("click", () => {
+      toggleWindow();
+    });
+
     tray.on('double-click', () => {
       if (isMinimalMode) {
         setMinimalMode(false);
@@ -225,6 +303,14 @@ function setupIpcHandlers() {
   ipcMain.handle("app:openExternal", async (_, url: string) => {
     await shell.openExternal(url);
     return { success: true };
+  });
+
+  ipcMain.handle("app:getStreamCount", () => {
+    return localServer?.getStreams().length || 0;
+  });
+
+  ipcMain.handle("app:getIsMinimalMode", () => {
+    return isMinimalMode;
   });
 
   ipcMain.handle("app:setMinimalMode", async (_, minimal: boolean) => {
@@ -512,10 +598,21 @@ app.on("window-all-closed", () => {
   }
 });
 
-app.on("before-quit", () => {
-  (app as any).isQuiting = true;
-  downloaderService?.cleanup();
-  localServer?.stop();
+app.on("before-quit", (e) => {
+  if (!(app as any).isReallyQuitting) {
+    e.preventDefault();
+    (app as any).isQuiting = true;
+    
+    (async () => {
+      console.log("[Main] Finalizing shutdown...");
+      downloaderService?.cleanup();
+      if (localServer) {
+        await localServer.stop();
+      }
+      (app as any).isReallyQuitting = true;
+      app.quit();
+    })();
+  }
 });
 
 // Handle stream from extension

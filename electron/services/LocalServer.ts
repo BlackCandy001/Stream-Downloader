@@ -55,8 +55,13 @@ export class LocalServer {
   stop(): Promise<void> {
     return new Promise((resolve) => {
       if (this.server) {
-        this.server.close(() => {
-          console.log("[LocalServer] Stopped");
+        this.server.close((err) => {
+          if (err) {
+            console.error("[LocalServer] Error during stop:", err);
+          } else {
+            console.log("[LocalServer] Stopped and port released");
+          }
+          this.server = null;
           resolve();
         });
       } else {

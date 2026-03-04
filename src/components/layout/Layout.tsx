@@ -57,6 +57,7 @@ const StyledSider = styled(Sider)`
     background: var(--primary) !important;
     color: var(--bg-color) !important;
     box-shadow: none;
+    -webkit-app-region: no-drag;
 
     .anticon {
       color: var(--bg-color) !important;
@@ -72,6 +73,11 @@ const StyledHeader = styled(Header)`
   justify-content: space-between;
   border-bottom: 1px solid var(--border-color);
   height: 64px;
+  -webkit-app-region: drag;
+
+  & > * {
+    -webkit-app-region: no-drag;
+  }
 `;
 
 const StyledContent = styled(Content)`
@@ -89,17 +95,10 @@ const Logo = styled.div<{ $collapsed: boolean }>`
   padding: 0 24px;
   gap: 12px;
   border-bottom: 1px solid var(--border-color);
+  -webkit-app-region: drag;
 
-  .logo-icon {
-    font-size: 24px;
-  }
-
-  .logo-text {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text-main);
-    letter-spacing: -0.5px;
-    white-space: nowrap;
+  .logo-icon, .logo-text {
+    -webkit-app-region: no-drag;
   }
 `;
 
@@ -134,6 +133,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Initial sync
     useDownloadStore.getState().loadDownloads();
 
+    // Sync mode from main process on mount
+    window.electronAPI.appGetIsMinimalMode().then((isMinimal) => {
+      if (isMinimal && location.pathname !== "/minimal") {
+        navigate("/minimal");
+      }
+    });
+
     const unsubscribe = window.electronAPI.onAppMessage((data) => {
       if (data && data.type === "info" && data.content === "instantDownloadAutoStarted") {
         message.success(t("messages.downloadStarted") || "Instant Download auto-started!");
@@ -163,6 +169,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       unsubscribeProgress();
     };
   }, [message, t, navigate]);
+
+  useEffect(() => {
+    // Handle body transparency for Minimal Mode (production build fix)
+    if (location.pathname === "/minimal") {
+      document.body.style.backgroundColor = "transparent";
+      document.body.classList.add("is-minimal");
+    } else {
+      document.body.style.backgroundColor = "";
+      document.body.classList.remove("is-minimal");
+    }
+  }, [location.pathname]);
 
   const menuItems = [
     {

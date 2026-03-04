@@ -58,6 +58,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   appOpenExternal: (url: string) => ipcRenderer.invoke("app:openExternal", url),
   appSetMinimalMode: (minimal: boolean) => ipcRenderer.invoke("app:setMinimalMode", minimal),
   appShowContextMenu: () => ipcRenderer.invoke("app:showContextMenu"),
+  appGetStreamCount: () => ipcRenderer.invoke("app:getStreamCount"),
+  appGetIsMinimalMode: () => ipcRenderer.invoke("app:getIsMinimalMode"),
   downloadProgressSync: (data: any) => ipcRenderer.send("download:progress-sync", data),
 
   // Stream Parsing
@@ -188,6 +190,8 @@ declare global {
       appOpenExternal: (url: string) => Promise<{ success: boolean }>;
       appSetMinimalMode: (minimal: boolean) => Promise<void>;
       appShowContextMenu: () => Promise<void>;
+      appGetStreamCount: () => Promise<number>;
+      appGetIsMinimalMode: () => Promise<boolean>;
 
       // Stream Parsing
       streamParse: (url: string, options: any) => Promise<any>;
